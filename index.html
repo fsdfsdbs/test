@@ -1,574 +1,10 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>fsdfsdbs - Profil</title>
-    <style>
-        :root {
-            --primary-color: #00CED1;
-            --secondary-color: #FF6B9E;
-            --background-dark: #0A0A1A;
-            --text-color: #E0E0FF;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-
-        body {
-            font-family: 'Courier New', monospace;
-            background: var(--background-dark);
-            color: var(--text-color);
-            cursor: none;
-        }
-
-        .custom-cursor {
-            position: fixed;
-            width: 32px;
-            height: 32px;
-            background: radial-gradient(circle, var(--primary-color) 30%, transparent 70%);
-            border: 2px solid var(--primary-color);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 10000;
-            box-shadow: 0 0 10px var(--primary-color);
-            display: none;
-        }
-
-        body.home-theme {
-            --primary-color: #00CED1;
-            --secondary-color: #FF6B9E;
-        }
-
-        body.hacker-theme {
-            --primary-color: #22C55E;
-            --secondary-color: #2DD4BF;
-        }
-
-        body.rain-theme {
-            --primary-color: #1E3A8A;
-            --secondary-color: #2563EB;
-        }
-
-        body.anime-theme {
-            --primary-color: #DC2626;
-            --secondary-color: #F87171;
-        }
-
-        body.car-theme {
-            --primary-color: #EAB308;
-            --secondary-color: #FACC15;
-        }
-
-        .container {
-            width: 100%;
-            height: 100vh;
-            position: relative;
-            overflow: hidden;
-        }
-
-        #background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: 1;
-            pointer-events: none;
-            background: linear-gradient(135deg, #000 0%, #1a0033 100%);
-        }
-
-        .glitch-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 20;
-            opacity: 0;
-            mix-blend-mode: color-dodge;
-            background: linear-gradient(45deg, transparent 20%, rgba(255,0,0,0.1) 50%, transparent 80%);
-            transition: opacity 0.5s;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        #profile-block, #skills-block {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 640px;
-            max-width: 90vw;
-            background: rgba(0, 0, 0, 0.7);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            padding: 30px;
-            border-radius: 20px;
-            z-index: 20;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            backdrop-filter: blur(10px);
-            opacity: 1;
-            transition: all 0.5s ease;
-        }
-
-        #profile-block.show {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
-
-        #profile-block.hide {
-            opacity: 0;
-            transform: translate(-50%, -50%) scale(0.9);
-        }
-
-        .profile-header {
-            display: flex;
-            align-items: flex-start;
-            gap: 20px;
-        }
-
-        .profile-container {
-            position: relative;
-            width: 120px;
-            height: 120px;
-            flex-shrink: 0;
-        }
-
-        .profile-container::after {
-            content: '';
-            position: absolute;
-            top: -8px;
-            left: -8px;
-            right: -8px;
-            bottom: -8px;
-            border-radius: 50%;
-            background: radial-gradient(
-                circle at 15% 15%,
-                var(--primary-color) 0%,
-                transparent 50%
-            );
-            animation: orbit 3s linear infinite;
-            z-index: -1;
-            filter: blur(3px);
-            box-shadow: 0 0 20px var(--primary-color);
-        }
-
-        .profile-container.fast-orbit::after {
-            animation: fast-orbit 0.5s linear forwards;
-        }
-
-        @keyframes orbit {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes fast-orbit {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .profile-picture {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            object-fit: cover;
-            cursor: pointer;
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            position: relative;
-            z-index: 1;
-        }
-
-        .profile-info {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .name-and-badges {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        #profile-name {
-            font-family: 'Courier New', monospace;
-            font-weight: 700;
-            font-size: 28px;
-            letter-spacing: 3px;
-            color: #fff;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
-            min-height: 35px;
-        }
-
-        #profile-name.glitch {
-            animation: glitch 0.2s ease-in-out;
-        }
-
-        @keyframes glitch {
-            0%, 100% { transform: translate(0); }
-            20% { transform: translate(-2px, 2px); }
-            40% { transform: translate(-2px, -2px); }
-            60% { transform: translate(2px, 2px); }
-            80% { transform: translate(2px, -2px); }
-        }
-
-        .badge-group {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .badge-container {
-            position: relative;
-            width: 30px;
-            height: 30px;
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
-
-        .badge-container:hover {
-            transform: scale(1.2);
-        }
-
-        .badge {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            border: 2px solid var(--primary-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: bold;
-            color: #000;
-        }
-
-        #profile-bio {
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.9);
-            line-height: 1.4;
-            min-height: 42px;
-        }
-
-        #profile-bio.glitch {
-            animation: glitch 0.2s ease-in-out;
-        }
-
-        .bio-separator {
-            width: 100%;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
-            margin: 10px 0;
-        }
-
-        .profile-footer {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .social-links {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 20px;
-            padding: 10px 15px;
-            backdrop-filter: blur(5px);
-        }
-
-        .social-icon {
-            width: 32px;
-            height: 32px;
-            transition: transform 0.3s ease;
-            filter: drop-shadow(0 0 5px var(--primary-color));
-            cursor: pointer;
-            opacity: 0.8;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            text-decoration: none;
-            color: var(--primary-color);
-        }
-
-        .social-icon:hover {
-            transform: scale(1.3);
-            opacity: 1;
-        }
-
-        .visitor-counter {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            width: fit-content;
-            backdrop-filter: blur(5px);
-        }
-
-        .visitor-icon {
-            width: 18px;
-            height: 18px;
-            color: var(--primary-color);
-        }
-
-        .skills-title {
-            text-align: center;
-            font-size: 22px;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-
-        .skill {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .skill-name {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 14px;
-        }
-
-        .skill-bar-container {
-            height: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            overflow: hidden;
-            border: 1px solid var(--primary-color);
-        }
-
-        .skill-bar {
-            height: 100%;
-            border-radius: 4px;
-            width: 0%;
-            transition: width 2s ease-out;
-            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-            box-shadow: 0 0 10px var(--primary-color);
-        }
-
-        #results-button-container {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 20;
-        }
-
-        #results-theme {
-            background: linear-gradient(to bottom right, var(--primary-color), var(--secondary-color));
-            color: #000;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            font-weight: bold;
-            transition: all 0.3s;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        #results-theme:hover {
-            transform: scale(1.05);
-            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
-        }
-
-        #results-hint {
-            position: absolute;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 10px;
-            font-size: 11px;
-            width: 150px;
-            text-align: center;
-            pointer-events: none;
-            z-index: 25;
-            border: 1px solid var(--primary-color);
-            margin-top: 12px;
-        }
-
-        #start-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 30;
-            cursor: pointer;
-        }
-
-        #start-text {
-            font-family: 'Courier New', monospace;
-            font-size: 20px;
-            color: #fff;
-            text-align: center;
-            letter-spacing: 2px;
-        }
-
-        .controls {
-            position: fixed;
-            bottom: calc(50% - 320px);
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 25;
-            display: flex;
-            gap: 8px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 8px 12px;
-            border-radius: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .theme-button {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            background: rgba(0, 0, 0, 0.5);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-            font-size: 14px;
-            font-weight: bold;
-            color: white;
-        }
-
-        .theme-button:hover {
-            transform: scale(1.15);
-            border-color: var(--primary-color);
-            background: rgba(0, 0, 0, 0.7);
-            box-shadow: 0 0 10px var(--primary-color);
-        }
-
-        .top-controls {
-            position: fixed;
-            bottom: calc(50% - 270px);
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 25px;
-            padding: 8px 15px;
-            display: flex;
-            gap: 12px;
-            z-index: 25;
-            align-items: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .volume-control, .transparency-control {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .volume-icon, .transparency-icon {
-            width: 18px;
-            height: 18px;
-            color: var(--primary-color);
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .volume-icon:hover, .transparency-icon:hover {
-            filter: drop-shadow(0 0 5px var(--primary-color));
-        }
-
-        .volume-slider, .transparency-slider {
-            -webkit-appearance: none;
-            appearance: none;
-            background: transparent;
-            outline: none;
-            width: 80px;
-            height: 5px;
-            border-radius: 3px;
-            cursor: pointer;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .volume-slider::-webkit-slider-thumb, .transparency-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 14px;
-            height: 14px;
-            background: var(--primary-color);
-            cursor: grab;
-            border-radius: 50%;
-            box-shadow: 0 0 10px var(--primary-color);
-        }
-
-        @media (max-width: 768px) {
-            #profile-block, #skills-block {
-                width: 85vw;
-                max-width: 360px;
-                padding: 20px;
-            }
-
-            .profile-picture {
-                width: 100px;
-                height: 100px;
-            }
-
-            #profile-name {
-                font-size: 20px;
-            }
-
-            #profile-bio {
-                font-size: 12px;
-            }
-
-            .controls {
-                bottom: calc(50% - 250px);
-            }
-
-            .theme-button {
-                width: 30px;
-                height: 30px;
-                font-size: 12px;
-            }
-
-            .top-controls {
-                bottom: calc(50% - 200px);
-                padding: 6px 10px;
-                gap: 10px;
-            }
-        }
-    </style>
+    <title>fsdfsdbs Profile</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="home-theme" onload="initMedia()">
     <div class="custom-cursor"></div>
@@ -578,30 +14,42 @@
     </div>
 
     <div class="container">
-        <div id="background"></div>
+        <video id="background" autoplay loop muted playsinline webkit-playsinline></video>
+
+        <div id="hacker-overlay" class="hidden"></div>
+        <div id="snow-overlay" class="hidden"></div>
         <div class="glitch-overlay"></div>
 
-        <div id="profile-block" class="show">
+        <audio id="background-music"></audio>
+        <audio id="hacker-music"></audio>
+        <audio id="rain-music"></audio>
+        <audio id="anime-music"></audio>
+        <audio id="car-music"></audio>
+
+        <div id="profile-block">
             <div class="profile-header">
                 <div class="profile-container">
-                    <div class="profile-picture" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; font-size: 50px;">👨‍💻</div>
+                    <img src="assets/profile.gif" alt="Profile" class="profile-picture">
                 </div>
                 <div class="profile-info">
                     <div class="name-and-badges">
-                        <div id="profile-name">fsdfsdbs</div>
+                        <div id="profile-name"></div>
                         <div class="badge-group">
                             <div class="badge-container">
-                                <div class="badge">🔥</div>
+                                <img src="assets/developer.png" alt="Developer" class="badge">
+                                <div class="badge-back">Developer</div>
                             </div>
                             <div class="badge-container">
-                                <div class="badge">⭐</div>
+                                <img src="assets/verified.gif" alt="Verified" class="badge">
+                                <div class="badge-back">Verified</div>
                             </div>
                             <div class="badge-container">
-                                <div class="badge">✨</div>
+                                <img src="assets/partner.gif" alt="Partner" class="badge">
+                                <div class="badge-back">Partner</div>
                             </div>
                         </div>
                     </div>
-                    <div id="profile-bio">Développeur Web | Passionné de technologie 🚀</div>
+                    <div id="profile-bio"></div>
                 </div>
             </div>
 
@@ -609,230 +57,87 @@
 
             <div class="profile-footer">
                 <div class="social-links">
-                    <a href="https://github.com/fsdfsdbs" target="_blank" class="social-icon" title="GitHub">👍</a>
-                    <a href="https://discord.gg/motiongoats" target="_blank" class="social-icon" title="Discord">💬</a>
-                    <a href="https://youtube.com" target="_blank" class="social-icon" title="YouTube">📺</a>
-                    <a href="https://twitter.com" target="_blank" class="social-icon" title="Twitter">𝕏</a>
+                    <a href="https://github.com/fsdfsdbs" target="_blank">
+                        <img src="assets/github.png" alt="GitHub" class="social-icon">
+                    </a>
+                    <a href="https://discord.gg/motiongoats" target="_blank">
+                        <img src="assets/discord.png" alt="Discord" class="social-icon">
+                    </a>
+                    <a href="https://youtube.com" target="_blank">
+                        <img src="assets/youtube.png" alt="YouTube" class="social-icon">
+                    </a>
+                    <a href="https://tiktok.com" target="_blank">
+                        <img src="assets/tiktok.png" alt="TikTok" class="social-icon">
+                    </a>
                 </div>
 
                 <div class="visitor-counter">
-                    <span class="visitor-icon">👁️</span>
-                    <span id="visitor-count">42069</span>
+                    <svg class="visitor-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    <span id="visitor-count">921234</span>
                 </div>
             </div>
         </div>
 
         <div id="skills-block" class="hidden">
-            <h2 class="skills-title">Compétences</h2>
+            <h2 class="skills-title">Skills</h2>
             <div class="skill">
                 <div class="skill-name">
-                    <span>HTML</span>
-                    <span>90%</span>
+                    <span>Python</span>
+                    <span>87%</span>
                 </div>
                 <div class="skill-bar-container">
-                    <div id="html-bar" class="skill-bar"></div>
+                    <div id="python-bar" class="skill-bar"></div>
                 </div>
             </div>
             <div class="skill">
                 <div class="skill-name">
-                    <span>CSS</span>
-                    <span>85%</span>
+                    <span>C++</span>
+                    <span>75%</span>
                 </div>
                 <div class="skill-bar-container">
-                    <div id="css-bar" class="skill-bar"></div>
+                    <div id="cpp-bar" class="skill-bar"></div>
                 </div>
             </div>
             <div class="skill">
                 <div class="skill-name">
-                    <span>JavaScript</span>
-                    <span>95%</span>
+                    <span>C#</span>
+                    <span>80%</span>
                 </div>
                 <div class="skill-bar-container">
-                    <div id="javascript-bar" class="skill-bar"></div>
+                    <div id="csharp-bar" class="skill-bar"></div>
                 </div>
             </div>
         </div>
 
         <div id="results-button-container" class="hidden">
             <button id="results-theme">View Results</button>
-            <div id="results-hint" class="hidden">Click again to return</div>
+            <div id="results-hint" class="hidden">Click to return to profile</div>
         </div>
 
         <div class="controls">
-            <div id="home-theme" class="theme-button" title="Home Theme">1</div>
-            <div id="hacker-theme" class="theme-button" title="Hacker Theme">2</div>
-            <div id="rain-theme" class="theme-button" title="Rain Theme">3</div>
-            <div id="anime-theme" class="theme-button" title="Anime Theme">4</div>
-            <div id="car-theme" class="theme-button" title="Car Theme">5</div>
+            <div id="home-theme" class="theme-button">1</div>
+            <div id="hacker-theme" class="theme-button">2</div>
+            <div id="rain-theme" class="theme-button">3</div>
+            <div id="anime-theme" class="theme-button">4</div>
+            <div id="car-theme" class="theme-button">5</div>
         </div>
 
         <div class="top-controls">
-            <div class="volume-control">
-                <span style="font-size: 12px; color: rgba(255,255,255,0.7);">VOL</span>
-                <input type="range" min="0" max="100" value="50" class="volume-slider" id="volume-slider">
-            </div>
-            <div class="transparency-control">
-                <span style="font-size: 12px; color: rgba(255,255,255,0.7);">BG</span>
-                <input type="range" min="0" max="100" value="70" class="transparency-slider" id="transparency-slider">
-            </div>
+            <svg class="volume-icon" id="volume-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707l-4.707-4.707z"></path>
+            </svg>
+            <input type="range" min="0" max="1" step="0.01" value="0.3" class="volume-slider" id="volume-slider">
+            
+            <svg class="transparency-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 3v18M3 12h18"></path>
+            </svg>
+            <input type="range" min="0" max="1" step="0.01" value="0.7" class="transparency-slider" id="transparency-slider">
         </div>
     </div>
 
-    <script>
-        let currentTheme = 'home-theme';
-        let isShowingSkills = false;
-        let hasUserInteracted = false;
-
-        function initMedia() {
-            setupCursor();
-            setupThemeButtons();
-            setupSkillBars();
-            setupSliders();
-            setupStartScreen();
-        }
-
-        function setupCursor() {
-            const cursor = document.querySelector('.custom-cursor');
-            document.addEventListener('mousemove', (e) => {
-                cursor.style.left = e.clientX + 'px';
-                cursor.style.top = e.clientY + 'px';
-                cursor.style.display = 'block';
-            });
-
-            document.addEventListener('mouseleave', () => {
-                cursor.style.display = 'none';
-            });
-        }
-
-        function setupStartScreen() {
-            const startScreen = document.getElementById('start-screen');
-            const startText = document.getElementById('start-text');
-            const profileBlock = document.getElementById('profile-block');
-            const resultsContainer = document.getElementById('results-button-container');
-
-            const startMessage = "Click here to see the motion baby";
-            let startIndex = 0;
-            let startCursorVisible = true;
-
-            function typeWriterStart() {
-                if (startIndex < startMessage.length) {
-                    startIndex++;
-                }
-                const text = startMessage.slice(0, startIndex);
-                startText.textContent = text + (startCursorVisible ? '|' : ' ');
-                if (startIndex < startMessage.length) {
-                    setTimeout(typeWriterStart, 100);
-                }
-            }
-
-            setInterval(() => {
-                startCursorVisible = !startCursorVisible;
-                const text = startMessage.slice(0, startIndex);
-                startText.textContent = text + (startCursorVisible ? '|' : ' ');
-            }, 500);
-
-            typeWriterStart();
-
-            startScreen.addEventListener('click', () => {
-                hasUserInteracted = true;
-                startScreen.style.opacity = '0';
-                startScreen.style.pointerEvents = 'none';
-                setTimeout(() => {
-                    startScreen.classList.add('hidden');
-                }, 500);
-                resultsContainer.classList.remove('hidden');
-            });
-        }
-
-        function setupThemeButtons() {
-            const themes = [
-                { id: 'home-theme', class: 'home-theme', bg: 'linear-gradient(135deg, #000 0%, #1a0033 50%, #000033 100%)' },
-                { id: 'hacker-theme', class: 'hacker-theme', bg: 'linear-gradient(135deg, #0a0e27 0%, #1a0033 50%, #0d0221 100%)' },
-                { id: 'rain-theme', class: 'rain-theme', bg: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' },
-                { id: 'anime-theme', class: 'anime-theme', bg: 'linear-gradient(135deg, #2d1b4e 0%, #0f0d1e 50%, #1a0033 100%)' },
-                { id: 'car-theme', class: 'car-theme', bg: 'linear-gradient(135deg, #2c1810 0%, #1a0f0a 50%, #3d2817 100%)' }
-            ];
-
-            themes.forEach(theme => {
-                document.getElementById(theme.id).addEventListener('click', () => {
-                    switchTheme(theme.class, theme.bg);
-                });
-            });
-        }
-
-        function switchTheme(themeClass, bgGradient) {
-            document.body.className = themeClass;
-            currentTheme = themeClass;
-            document.getElementById('background').style.background = bgGradient;
-            
-            const profileBlock = document.getElementById('profile-block');
-            profileBlock.classList.remove('show');
-            profileBlock.classList.add('hide');
-            setTimeout(() => {
-                profileBlock.classList.remove('hide');
-                profileBlock.classList.add('show');
-            }, 250);
-        }
-
-        function setupSkillBars() {
-            const resultsButton = document.getElementById('results-theme');
-            const profileBlock = document.getElementById('profile-block');
-            const skillsBlock = document.getElementById('skills-block');
-            const resultsHint = document.getElementById('results-hint');
-
-            resultsButton.addEventListener('click', () => {
-                toggleSkillsView();
-            });
-        }
-
-        function toggleSkillsView() {
-            isShowingSkills = !isShowingSkills;
-            const profileBlock = document.getElementById('profile-block');
-            const skillsBlock = document.getElementById('skills-block');
-            const resultsHint = document.getElementById('results-hint');
-
-            if (isShowingSkills) {
-                profileBlock.classList.remove('show');
-                profileBlock.classList.add('hidden');
-                skillsBlock.classList.remove('hidden');
-                skillsBlock.classList.add('show');
-                resultsHint.classList.remove('hidden');
-                animateSkillBars();
-            } else {
-                profileBlock.classList.remove('hidden');
-                profileBlock.classList.add('show');
-                skillsBlock.classList.add('hidden');
-                resultsHint.classList.add('hidden');
-            }
-        }
-
-        function animateSkillBars() {
-            setTimeout(() => {
-                document.getElementById('html-bar').style.width = '90%';
-                document.getElementById('css-bar').style.width = '85%';
-                document.getElementById('javascript-bar').style.width = '95%';
-            }, 100);
-        }
-
-        function setupSliders() {
-            const volumeSlider = document.getElementById('volume-slider');
-            const transparencySlider = document.getElementById('transparency-slider');
-            const background = document.getElementById('background');
-
-            transparencySlider.addEventListener('input', (e) => {
-                const opacity = e.target.value / 100;
-                background.style.opacity = opacity;
-            });
-        }
-
-        // Emoji animation
-        const emojis = ['👨‍💻', '🚀', '⚡', '🎨', '💡'];
-        let emojiIndex = 0;
-        setInterval(() => {
-            const profilePic = document.querySelector('.profile-picture');
-            profilePic.textContent = emojis[emojiIndex % emojis.length];
-            emojiIndex++;
-        }, 3000);
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
