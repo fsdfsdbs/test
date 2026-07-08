@@ -3,29 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>fsdfsdbs Profile</title>
+    <title>Gun.Lol Clone - Profile</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body class="home-theme" onload="initMedia()">
     <div class="custom-cursor"></div>
 
+    <!-- Start Screen -->
     <div id="start-screen">
         <div id="start-text"></div>
+        <div class="start-subtitle">Click anywhere to enter</div>
     </div>
 
+    <!-- Main Container -->
     <div class="container">
+        <!-- Background Video -->
         <video id="background" autoplay loop muted playsinline webkit-playsinline></video>
 
+        <!-- Overlays -->
         <div id="hacker-overlay" class="hidden"></div>
         <div id="snow-overlay" class="hidden"></div>
         <div class="glitch-overlay"></div>
 
-        <audio id="background-music"></audio>
-        <audio id="hacker-music"></audio>
-        <audio id="rain-music"></audio>
-        <audio id="anime-music"></audio>
-        <audio id="car-music"></audio>
+        <!-- Audio Elements -->
+        <audio id="background-music" loop></audio>
+        <audio id="hacker-music" loop></audio>
+        <audio id="rain-music" loop></audio>
+        <audio id="anime-music" loop></audio>
+        <audio id="car-music" loop></audio>
 
+        <!-- Profile Block -->
         <div id="profile-block">
             <div class="profile-header">
                 <div class="profile-container">
@@ -47,9 +55,29 @@
                                 <img src="assets/partner.gif" alt="Partner" class="badge">
                                 <div class="badge-back">Partner</div>
                             </div>
+                            <div class="badge-container">
+                                <img src="assets/owner.gif" alt="Owner" class="badge">
+                                <div class="badge-back">Owner</div>
+                            </div>
                         </div>
                     </div>
                     <div id="profile-bio"></div>
+                    
+                    <!-- Social Stats -->
+                    <div class="social-stats">
+                        <div class="stat">
+                            <span class="stat-value" id="followers-count">10K</span>
+                            <span class="stat-label">Followers</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="projects-count">25</span>
+                            <span class="stat-label">Projects</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="years-count">5+</span>
+                            <span class="stat-label">Years</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -57,17 +85,25 @@
 
             <div class="profile-footer">
                 <div class="social-links">
-                    <a href="https://github.com/fsdfsdbs" target="_blank">
+                    <a href="https://github.com" target="_blank" class="social-link">
                         <img src="assets/github.png" alt="GitHub" class="social-icon">
+                        <span class="social-tooltip">GitHub</span>
                     </a>
-                    <a href="https://discord.gg/motiongoats" target="_blank">
+                    <a href="https://discord.gg/motiongoats" target="_blank" class="social-link">
                         <img src="assets/discord.png" alt="Discord" class="social-icon">
+                        <span class="social-tooltip">Discord</span>
                     </a>
-                    <a href="https://youtube.com" target="_blank">
+                    <a href="https://youtube.com" target="_blank" class="social-link">
                         <img src="assets/youtube.png" alt="YouTube" class="social-icon">
+                        <span class="social-tooltip">YouTube</span>
                     </a>
-                    <a href="https://tiktok.com" target="_blank">
+                    <a href="https://tiktok.com" target="_blank" class="social-link">
                         <img src="assets/tiktok.png" alt="TikTok" class="social-icon">
+                        <span class="social-tooltip">TikTok</span>
+                    </a>
+                    <a href="https://twitter.com" target="_blank" class="social-link">
+                        <img src="assets/twitter.png" alt="Twitter" class="social-icon">
+                        <span class="social-tooltip">Twitter</span>
                     </a>
                 </div>
 
@@ -76,47 +112,110 @@
                         <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                     </svg>
-                    <span id="visitor-count">921234</span>
+                    <span id="visitor-count">1234567</span>
                 </div>
             </div>
         </div>
 
+        <!-- Skills Block -->
         <div id="skills-block" class="hidden">
-            <h2 class="skills-title">Skills</h2>
-            <div class="skill">
-                <div class="skill-name">
-                    <span>Python</span>
-                    <span>87%</span>
+            <h2 class="skills-title">My Skills</h2>
+            <div class="skills-grid">
+                <div class="skill">
+                    <div class="skill-header">
+                        <img src="assets/python.png" alt="Python" class="skill-icon">
+                        <span class="skill-name-text">Python</span>
+                        <span class="skill-percent">95%</span>
+                    </div>
+                    <div class="skill-bar-container">
+                        <div id="python-bar" class="skill-bar"></div>
+                    </div>
                 </div>
-                <div class="skill-bar-container">
-                    <div id="python-bar" class="skill-bar"></div>
+                <div class="skill">
+                    <div class="skill-header">
+                        <img src="assets/cpp.png" alt="C++" class="skill-icon">
+                        <span class="skill-name-text">C++</span>
+                        <span class="skill-percent">88%</span>
+                    </div>
+                    <div class="skill-bar-container">
+                        <div id="cpp-bar" class="skill-bar"></div>
+                    </div>
                 </div>
-            </div>
-            <div class="skill">
-                <div class="skill-name">
-                    <span>C++</span>
-                    <span>75%</span>
+                <div class="skill">
+                    <div class="skill-header">
+                        <img src="assets/csharp.png" alt="C#" class="skill-icon">
+                        <span class="skill-name-text">C#</span>
+                        <span class="skill-percent">82%</span>
+                    </div>
+                    <div class="skill-bar-container">
+                        <div id="csharp-bar" class="skill-bar"></div>
+                    </div>
                 </div>
-                <div class="skill-bar-container">
-                    <div id="cpp-bar" class="skill-bar"></div>
+                <div class="skill">
+                    <div class="skill-header">
+                        <img src="assets/javascript.png" alt="JavaScript" class="skill-icon">
+                        <span class="skill-name-text">JavaScript</span>
+                        <span class="skill-percent">90%</span>
+                    </div>
+                    <div class="skill-bar-container">
+                        <div id="javascript-bar" class="skill-bar"></div>
+                    </div>
                 </div>
-            </div>
-            <div class="skill">
-                <div class="skill-name">
-                    <span>C#</span>
-                    <span>80%</span>
+                <div class="skill">
+                    <div class="skill-header">
+                        <span class="skill-icon emoji">&#128187;</span>
+                        <span class="skill-name-text">HTML/CSS</span>
+                        <span class="skill-percent">98%</span>
+                    </div>
+                    <div class="skill-bar-container">
+                        <div id="html-bar" class="skill-bar"></div>
+                    </div>
                 </div>
-                <div class="skill-bar-container">
-                    <div id="csharp-bar" class="skill-bar"></div>
+                <div class="skill">
+                    <div class="skill-header">
+                        <span class="skill-icon emoji">&#128100;</span>
+                        <span class="skill-name-text">Git</span>
+                        <span class="skill-percent">85%</span>
+                    </div>
+                    <div class="skill-bar-container">
+                        <div id="git-bar" class="skill-bar"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- Projects Block -->
+        <div id="projects-block" class="hidden">
+            <h2 class="projects-title">My Projects</h2>
+            <div class="projects-grid">
+                <div class="project-card">
+                    <div class="project-icon">&#128187;</div>
+                    <h3 class="project-name">Gun.Lol Clone</h3>
+                    <p class="project-desc">A complete profile website clone</p>
+                    <a href="#" class="project-link" target="_blank">View Project</a>
+                </div>
+                <div class="project-card">
+                    <div class="project-icon">&#128293;</div>
+                    <h3 class="project-name">Discord Bot</h3>
+                    <p class="project-desc">Multi-purpose bot with 100+ commands</p>
+                    <a href="#" class="project-link" target="_blank">View Project</a>
+                </div>
+                <div class="project-card">
+                    <div class="project-icon">&#127915;</div>
+                    <h3 class="project-name">Game Server</h3>
+                    <p class="project-desc">Custom game server with anti-cheat</p>
+                    <a href="#" class="project-link" target="_blank">View Project</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Button -->
         <div id="results-button-container" class="hidden">
             <button id="results-theme">View Results</button>
             <div id="results-hint" class="hidden">Click to return to profile</div>
         </div>
 
+        <!-- Theme Controls -->
         <div class="controls">
             <div id="home-theme" class="theme-button">1</div>
             <div id="hacker-theme" class="theme-button">2</div>
@@ -125,18 +224,63 @@
             <div id="car-theme" class="theme-button">5</div>
         </div>
 
+        <!-- Top Controls -->
         <div class="top-controls">
-            <svg class="volume-icon" id="volume-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707l-4.707-4.707z"></path>
-            </svg>
-            <input type="range" min="0" max="1" step="0.01" value="0.3" class="volume-slider" id="volume-slider">
+            <div class="control-group volume-control">
+                <svg class="volume-icon" id="volume-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707l-4.707-4.707z"></path>
+                </svg>
+                <input type="range" min="0" max="1" step="0.01" value="0.3" class="volume-slider" id="volume-slider">
+            </div>
             
-            <svg class="transparency-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 3v18M3 12h18"></path>
-            </svg>
-            <input type="range" min="0" max="1" step="0.01" value="0.7" class="transparency-slider" id="transparency-slider">
+            <div class="control-group transparency-control">
+                <svg class="transparency-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 3v18M3 12h18"></path>
+                </svg>
+                <input type="range" min="0" max="1" step="0.01" value="0.7" class="transparency-slider" id="transparency-slider">
+            </div>
+            
+            <div class="control-group music-control">
+                <svg class="music-icon" id="music-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18V5l12-2v13"></path>
+                    <circle cx="6" cy="18" r="3"></circle>
+                    <circle cx="18" cy="16" r="3"></circle>
+                </svg>
+                <span id="music-status">ON</span>
+            </div>
         </div>
     </div>
+
+    <!-- Settings Panel -->
+    <div id="settings-panel" class="hidden">
+        <div class="settings-header">
+            <h3>Settings</h3>
+            <button id="close-settings">X</button>
+        </div>
+        <div class="settings-content">
+            <div class="setting-item">
+                <label>Username</label>
+                <input type="text" id="username-input" value="GunLolUser">
+            </div>
+            <div class="setting-item">
+                <label>Bio</label>
+                <textarea id="bio-input">Professional developer | Creating amazing things</textarea>
+            </div>
+            <div class="setting-item">
+                <label>Theme Color</label>
+                <input type="color" id="theme-color-input" value="#00CED1">
+            </div>
+            <button id="save-settings">Save Changes</button>
+        </div>
+    </div>
+
+    <!-- Settings Button -->
+    <button id="settings-button" class="floating-button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+    </button>
 
     <script src="script.js"></script>
 </body>
