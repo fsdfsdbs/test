@@ -2,7 +2,7 @@
   "api": {
     "provider": "openai",
     "url": "https://models.github.ai/inference",
-    "key": "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",
+    "key": "",
     "model": "deepseek/DeepSeek-V3"
   },
   "settings": {
