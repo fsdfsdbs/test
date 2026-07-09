@@ -1,996 +1,934 @@
 // ===== Configuration =====
 const CONFIG = {
-    username: 'GunLolUser',
-    bioMessages: [
-        'Professional Developer | Creating Amazing Things',
-        'Building the future with code',
-        'Passionate about technology and innovation'
-    ],
-    startMessage: 'WELCOME TO MY PROFILE',
-    startSubtitle: 'Click anywhere to enter',
-    visitorCount: 1234567,
-    followersCount: '10K',
-    projectsCount: '25',
-    yearsCount: '5+',
-    skills: {
-        python: 95,
-        cpp: 88,
-        csharp: 82,
-        javascript: 90,
-        html: 98,
-        git: 85
-    }
+    api: {
+        url: "https://api.mistral.ai/v1/chat/completions", // URL par défaut (à changer)
+        key: "", // Clé API à remplir dans config.json ou via les paramètres
+        model: "mistral-tiny" // Modèle par défaut
+    },
+    maxTokens: 32000,
+    temperature: 0.7,
+    theme: "light" // light, dark, system
 };
 
 // ===== State =====
 let state = {
-    hasUserInteracted: false,
-    currentAudio: null,
-    isMuted: false,
-    isMusicOn: true,
-    isShowingSkills: false,
-    isShowingProjects: false,
-    currentTheme: 'home-theme',
-    username: CONFIG.username,
-    bio: CONFIG.bioMessages[0],
-    bioMessageIndex: 0
+    conversations: [],
+    currentConversationId: null,
+    messages: [],
+    isLoading: false,
+    isTyping: false,
+    theme: CONFIG.theme
 };
 
 // ===== DOM Elements =====
-let elements = {};
+const elements = {
+    // Sidebar
+    newChatBtn: document.getElementById("newChatBtn"),
+    chatHistory: document.getElementById("chatHistory"),
+    settingsBtn: document.getElementById("settingsBtn"),
+    
+    // Main
+    messages: document.getElementById("messages"),
+    messageInput: document.getElementById("messageInput"),
+    sendBtn: document.getElementById("sendBtn"),
+    currentChatTitle: document.getElementById("currentChatTitle"),
+    copyChatBtn: document.getElementById("copyChatBtn"),
+    deleteChatBtn: document.getElementById("deleteChatBtn"),
+    modelInfo: document.getElementById("modelInfo"),
+    tokenCount: document.getElementById("tokenCount"),
+    
+    // Modal
+    settingsModal: document.getElementById("settingsModal"),
+    closeSettingsBtn: document.getElementById("closeSettingsBtn"),
+    cancelSettingsBtn: document.getElementById("cancelSettingsBtn"),
+    saveSettingsBtn: document.getElementById("saveSettingsBtn"),
+    apiUrl: document.getElementById("apiUrl"),
+    apiKey: document.getElementById("apiKey"),
+    apiModel: document.getElementById("apiModel"),
+    themeSelect: document.getElementById("theme"),
+    
+    // Loading
+    loadingOverlay: document.getElementById("loadingOverlay")
+};
 
 // ===== Initialization =====
-function initMedia() {
-    console.log('Initializing media...');
-    
-    // Get all DOM elements
-    elements = {
-        background: document.getElementById('background'),
-        backgroundMusic: document.getElementById('background-music'),
-        hackerMusic: document.getElementById('hacker-music'),
-        rainMusic: document.getElementById('rain-music'),
-        animeMusic: document.getElementById('anime-music'),
-        carMusic: document.getElementById('car-music'),
-        startScreen: document.getElementById('start-screen'),
-        startText: document.getElementById('start-text'),
-        startSubtitle: document.querySelector('.start-subtitle'),
-        profileBlock: document.getElementById('profile-block'),
-        skillsBlock: document.getElementById('skills-block'),
-        projectsBlock: document.getElementById('projects-block'),
-        profileName: document.getElementById('profile-name'),
-        profileBio: document.getElementById('profile-bio'),
-        visitorCount: document.getElementById('visitor-count'),
-        followersCount: document.getElementById('followers-count'),
-        projectsCount: document.getElementById('projects-count'),
-        yearsCount: document.getElementById('years-count'),
-        resultsButtonContainer: document.getElementById('results-button-container'),
-        resultsButton: document.getElementById('results-theme'),
-        resultsHint: document.getElementById('results-hint'),
-        homeButton: document.getElementById('home-theme'),
-        hackerButton: document.getElementById('hacker-theme'),
-        rainButton: document.getElementById('rain-theme'),
-        animeButton: document.getElementById('anime-theme'),
-        carButton: document.getElementById('car-theme'),
-        volumeIcon: document.getElementById('volume-icon'),
-        volumeSlider: document.getElementById('volume-slider'),
-        transparencySlider: document.getElementById('transparency-slider'),
-        musicIcon: document.getElementById('music-icon'),
-        musicStatus: document.getElementById('music-status'),
-        hackerOverlay: document.getElementById('hacker-overlay'),
-        snowOverlay: document.getElementById('snow-overlay'),
-        glitchOverlay: document.querySelector('.glitch-overlay'),
-        profilePicture: document.querySelector('.profile-picture'),
-        profileContainer: document.querySelector('.profile-container'),
-        cursor: document.querySelector('.custom-cursor'),
-        settingsButton: document.getElementById('settings-button'),
-        settingsPanel: document.getElementById('settings-panel'),
-        closeSettings: document.getElementById('close-settings'),
-        saveSettings: document.getElementById('save-settings'),
-        usernameInput: document.getElementById('username-input'),
-        bioInput: document.getElementById('bio-input'),
-        themeColorInput: document.getElementById('theme-color-input'),
-        pythonBar: document.getElementById('python-bar'),
-        cppBar: document.getElementById('cpp-bar'),
-        csharpBar: document.getElementById('csharp-bar'),
-        javascriptBar: document.getElementById('javascript-bar'),
-        htmlBar: document.getElementById('html-bar'),
-        gitBar: document.getElementById('git-bar')
-    };
-
-    // Check if elements exist
-    if (!elements.background || !elements.backgroundMusic) {
-        console.error('Media elements not found');
-        return;
-    }
-
-    // Set initial volume
-    elements.backgroundMusic.volume = 0.3;
-    elements.background.volume = 0;
-    elements.background.muted = true;
-
-    // Try to play background video
-    elements.background.play().catch(err => {
-        console.error('Failed to play background video:', err);
-    });
-
-    // Initialize visitor counter
-    initializeVisitorCounter();
-
-    // Initialize stats
-    updateStats();
-
-    // Set up event listeners
+document.addEventListener("DOMContentLoaded", () => {
+    loadConfig();
+    loadConversations();
     setupEventListeners();
-
-    // Set up cursor
-    setupCursor();
-
-    // Start typing animations
-    typeWriterStart();
-
-    console.log('Media initialized');
-}
-
-// ===== Visitor Counter =====
-function initializeVisitorCounter() {
-    let totalVisitors = localStorage.getItem('totalVisitorCount');
-    if (!totalVisitors) {
-        totalVisitors = CONFIG.visitorCount;
-        localStorage.setItem('totalVisitorCount', totalVisitors);
-    } else {
-        totalVisitors = parseInt(totalVisitors);
-    }
-
-    const hasVisited = localStorage.getItem('hasVisited');
-    if (!hasVisited) {
-        totalVisitors++;
-        localStorage.setItem('totalVisitorCount', totalVisitors);
-        localStorage.setItem('hasVisited', 'true');
-    }
-
-    if (elements.visitorCount) {
-        elements.visitorCount.textContent = totalVisitors.toLocaleString();
-    }
-}
-
-// ===== Update Stats =====
-function updateStats() {
-    if (elements.followersCount) elements.followersCount.textContent = CONFIG.followersCount;
-    if (elements.projectsCount) elements.projectsCount.textContent = CONFIG.projectsCount;
-    if (elements.yearsCount) elements.yearsCount.textContent = CONFIG.yearsCount;
-}
+    applyTheme();
+    autoResizeTextarea();
+    
+    // Charger la configuration depuis config.json si elle existe
+    fetchConfigFromFile();
+});
 
 // ===== Event Listeners =====
 function setupEventListeners() {
-    // Start screen click
-    if (elements.startScreen) {
-        elements.startScreen.addEventListener('click', handleStartClick);
-        elements.startScreen.addEventListener('touchstart', (e) => {
+    // Nouveau chat
+    elements.newChatBtn.addEventListener("click", createNewConversation);
+    
+    // Envoyer un message
+    elements.sendBtn.addEventListener("click", sendMessage);
+    elements.messageInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            handleStartClick();
-        });
-    }
-
-    // Theme buttons
-    if (elements.homeButton) elements.homeButton.addEventListener('click', () => switchTheme('home'));
-    if (elements.hackerButton) elements.hackerButton.addEventListener('click', () => switchTheme('hacker'));
-    if (elements.rainButton) elements.rainButton.addEventListener('click', () => switchTheme('rain'));
-    if (elements.animeButton) elements.animeButton.addEventListener('click', () => switchTheme('anime'));
-    if (elements.carButton) elements.carButton.addEventListener('click', () => switchTheme('car'));
-
-    // Touch support for theme buttons
-    const themeButtons = [elements.homeButton, elements.hackerButton, elements.rainButton, elements.animeButton, elements.carButton];
-    themeButtons.forEach(btn => {
-        if (btn) {
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                const theme = btn.id.replace('-theme', '');
-                switchTheme(theme);
-            });
+            sendMessage();
         }
     });
-
-    // Volume controls
-    if (elements.volumeIcon) {
-        elements.volumeIcon.addEventListener('click', toggleMute);
-        elements.volumeIcon.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            toggleMute();
+    
+    // Boutons de l'en-tête du chat
+    elements.copyChatBtn.addEventListener("click", copyConversation);
+    elements.deleteChatBtn.addEventListener("click", deleteCurrentConversation);
+    
+    // Paramètres
+    elements.settingsBtn.addEventListener("click", openSettings);
+    elements.closeSettingsBtn.addEventListener("click", closeSettings);
+    elements.cancelSettingsBtn.addEventListener("click", closeSettings);
+    elements.saveSettingsBtn.addEventListener("click", saveSettings);
+    
+    // Boutons de prompts rapides
+    document.querySelectorAll(".quick-prompt").forEach(btn => {
+        btn.addEventListener("click", () => {
+            elements.messageInput.value = btn.dataset.prompt;
+            elements.messageInput.focus();
+            sendMessage();
         });
-    }
-
-    if (elements.volumeSlider) {
-        elements.volumeSlider.addEventListener('input', (e) => {
-            const volume = parseFloat(e.target.value);
-            if (state.currentAudio) {
-                state.currentAudio.volume = volume;
-                state.isMuted = false;
-                state.currentAudio.muted = false;
-                updateMusicStatus();
-            }
-        });
-    }
-
-    // Transparency slider
-    if (elements.transparencySlider) {
-        elements.transparencySlider.addEventListener('input', (e) => {
-            const opacity = parseFloat(e.target.value);
-            updateTransparency(opacity);
-        });
-    }
-
-    // Music toggle
-    if (elements.musicIcon) {
-        elements.musicIcon.addEventListener('click', toggleMusic);
-        elements.musicIcon.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            toggleMusic();
-        });
-    }
-
-    // Results button
-    if (elements.resultsButton) {
-        elements.resultsButton.addEventListener('click', toggleResults);
-        elements.resultsButton.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            toggleResults();
-        });
-    }
-
-    // Profile picture click
-    if (elements.profilePicture) {
-        elements.profilePicture.addEventListener('click', animateProfilePicture);
-        elements.profilePicture.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            animateProfilePicture();
-        });
-    }
-
-    // Settings button
-    if (elements.settingsButton) {
-        elements.settingsButton.addEventListener('click', () => {
-            elements.settingsPanel.classList.remove('hidden');
-        });
-    }
-
-    // Close settings
-    if (elements.closeSettings) {
-        elements.closeSettings.addEventListener('click', () => {
-            elements.settingsPanel.classList.add('hidden');
-        });
-    }
-
-    // Save settings
-    if (elements.saveSettings) {
-        elements.saveSettings.addEventListener('click', saveSettings);
-    }
-
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-        // ESC to close settings
-        if (e.key === 'Escape' && elements.settingsPanel && !elements.settingsPanel.classList.contains('hidden')) {
-            elements.settingsPanel.classList.add('hidden');
-        }
-        
-        // Number keys for themes
-        if (e.key >= '1' && e.key <= '5') {
-            const themes = ['home', 'hacker', 'rain', 'anime', 'car'];
-            const theme = themes[parseInt(e.key) - 1];
-            switchTheme(theme);
-        }
-        
-        // M key for mute
-        if (e.key === 'm' || e.key === 'M') {
-            toggleMute();
-        }
-        
-        // S key for settings
-        if (e.key === 's' || e.key === 'S') {
-            if (elements.settingsPanel) {
-                elements.settingsPanel.classList.toggle('hidden');
-            }
+    });
+    
+    // Gestion de la textarea
+    elements.messageInput.addEventListener("input", () => {
+        autoResizeTextarea();
+        updateSendButton();
+        updateTokenCount();
+    });
+    
+    // Changer de thème
+    elements.themeSelect.addEventListener("change", (e) => {
+        state.theme = e.target.value;
+        applyTheme();
+    });
+    
+    // Fermer le modal en cliquant à l'extérieur
+    elements.settingsModal.addEventListener("click", (e) => {
+        if (e.target === elements.settingsModal) {
+            closeSettings();
         }
     });
 }
 
-// ===== Cursor Setup =====
-function setupCursor() {
-    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+// ===== Theme Management =====
+function applyTheme() {
+    const theme = state.theme === "system" 
+        ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") 
+        : state.theme;
     
-    if (isTouchDevice) {
-        document.body.classList.add('touch-device');
-        
-        document.addEventListener('touchstart', (e) => {
-            const touch = e.touches[0];
-            updateCursorPosition(touch.clientX, touch.clientY);
-        });
-
-        document.addEventListener('touchmove', (e) => {
-            const touch = e.touches[0];
-            updateCursorPosition(touch.clientX, touch.clientY);
-        });
-
-        document.addEventListener('touchend', () => {
-            if (elements.cursor) {
-                elements.cursor.style.display = 'none';
-            }
-        });
-    } else {
-        document.addEventListener('mousemove', (e) => {
-            updateCursorPosition(e.clientX, e.clientY);
-        });
-
-        document.addEventListener('mousedown', () => {
-            if (elements.cursor) {
-                elements.cursor.style.transform = 'scale(0.8) translate(-50%, -50%)';
-            }
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (elements.cursor) {
-                elements.cursor.style.transform = 'scale(1) translate(-50%, -50%)';
-            }
-        });
-
-        document.addEventListener('mouseleave', () => {
-            if (elements.cursor) {
-                elements.cursor.style.display = 'none';
-            }
-        });
-
-        document.addEventListener('mouseenter', () => {
-            if (elements.cursor) {
-                elements.cursor.style.display = 'block';
-            }
-        });
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", state.theme);
+    
+    // Mettre à jour le sélecteur de thème dans le modal
+    if (elements.themeSelect) {
+        elements.themeSelect.value = state.theme;
     }
 }
 
-function updateCursorPosition(x, y) {
-    if (elements.cursor) {
-        elements.cursor.style.left = x + 'px';
-        elements.cursor.style.top = y + 'px';
-        elements.cursor.style.display = 'block';
-    }
+// ===== Textarea Auto-resize =====
+function autoResizeTextarea() {
+    elements.messageInput.style.height = "auto";
+    elements.messageInput.style.height = Math.min(elements.messageInput.scrollHeight, 120) + "px";
 }
 
-// ===== Start Click Handler =====
-function handleStartClick() {
-    if (elements.startScreen) {
-        elements.startScreen.classList.add('hidden');
-    }
-    
-    if (state.currentAudio) {
-        state.currentAudio.muted = false;
-        state.currentAudio.play().catch(err => {
-            console.error('Failed to play music after start screen click:', err);
-        });
-    }
-    
-    if (elements.profileBlock) {
-        elements.profileBlock.classList.remove('hidden');
-    }
-    
-    if (elements.resultsButtonContainer) {
-        elements.resultsButtonContainer.classList.remove('hidden');
-    }
-    
-    if (elements.profileContainer) {
-        elements.profileContainer.classList.add('orbit');
-    }
-    
-    // Start typing animations
-    typeWriterName();
-    typeWriterBio();
-    
-    state.hasUserInteracted = true;
+// ===== Send Button State =====
+function updateSendButton() {
+    const hasText = elements.messageInput.value.trim().length > 0;
+    elements.sendBtn.disabled = !hasText;
 }
 
-// ===== Typing Animations =====
-let startTextContent = '';
-let startIndex = 0;
-let startCursorVisible = true;
-
-function typeWriterStart() {
-    if (startIndex < CONFIG.startMessage.length) {
-        startTextContent = CONFIG.startMessage.slice(0, startIndex + 1);
-        startIndex++;
-    }
+// ===== Token Count =====
+function updateTokenCount() {
+    const text = elements.messageInput.value;
+    const tokenCount = estimateTokenCount(text);
+    const totalTokens = state.messages.reduce((sum, msg) => 
+        sum + estimateTokenCount(msg.content), 
+        tokenCount
+    );
     
-    if (elements.startText) {
-        elements.startText.textContent = startTextContent + (startCursorVisible ? '|' : ' ');
-    }
-    
-    if (startIndex < CONFIG.startMessage.length) {
-        setTimeout(typeWriterStart, 100);
-    }
+    elements.tokenCount.textContent = `${totalTokens} / ${CONFIG.maxTokens} jetons`;
 }
 
-setInterval(() => {
-    startCursorVisible = !startCursorVisible;
-    if (elements.startText) {
-        elements.startText.textContent = startTextContent + (startCursorVisible ? '|' : ' ');
-    }
-}, 500);
+function estimateTokenCount(text) {
+    // Estimation simple : 1 token ≈ 4 caractères (approximation)
+    return Math.ceil(text.length / 4);
+}
 
-let nameText = '';
-let nameIndex = 0;
-let isNameDeleting = false;
-let nameCursorVisible = true;
-
-function typeWriterName() {
-    const name = state.username || CONFIG.username;
-    
-    if (!isNameDeleting && nameIndex < name.length) {
-        nameText = name.slice(0, nameIndex + 1);
-        nameIndex++;
-    } else if (isNameDeleting && nameIndex > 0) {
-        nameText = name.slice(0, nameIndex - 1);
-        nameIndex--;
-    } else if (nameIndex === name.length) {
-        isNameDeleting = true;
-        setTimeout(typeWriterName, 10000);
-        return;
-    } else if (nameIndex === 0) {
-        isNameDeleting = false;
-    }
-    
-    if (elements.profileName) {
-        elements.profileName.textContent = nameText + (nameCursorVisible ? '|' : ' ');
-    }
-    
-    if (Math.random() < 0.1) {
-        if (elements.profileName) {
-            elements.profileName.classList.add('glitch');
-            setTimeout(() => {
-                if (elements.profileName) {
-                    elements.profileName.classList.remove('glitch');
-                }
-            }, 200);
+// ===== Configuration =====
+function loadConfig() {
+    const savedConfig = localStorage.getItem("chatbotConfig");
+    if (savedConfig) {
+        try {
+            const config = JSON.parse(savedConfig);
+            Object.assign(CONFIG, config);
+        } catch (e) {
+            console.error("Erreur de chargement de la configuration:", e);
         }
     }
     
-    setTimeout(typeWriterName, isNameDeleting ? 150 : 300);
+    // Charger le thème
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) {
+        state.theme = savedTheme;
+    }
 }
 
-setInterval(() => {
-    nameCursorVisible = !nameCursorVisible;
-    if (elements.profileName) {
-        elements.profileName.textContent = nameText + (nameCursorVisible ? '|' : ' ');
-    }
-}, 500);
-
-let bioText = '';
-let bioIndex = 0;
-let isBioDeleting = false;
-let bioCursorVisible = true;
-
-function typeWriterBio() {
-    const bioMessages = CONFIG.bioMessages;
-    const currentBio = bioMessages[state.bioMessageIndex] || bioMessages[0];
-    
-    if (!isBioDeleting && bioIndex < currentBio.length) {
-        bioText = currentBio.slice(0, bioIndex + 1);
-        bioIndex++;
-    } else if (isBioDeleting && bioIndex > 0) {
-        bioText = currentBio.slice(0, bioIndex - 1);
-        bioIndex--;
-    } else if (bioIndex === currentBio.length) {
-        isBioDeleting = true;
-        setTimeout(typeWriterBio, 2000);
-        return;
-    } else if (bioIndex === 0 && isBioDeleting) {
-        isBioDeleting = false;
-        state.bioMessageIndex = (state.bioMessageIndex + 1) % bioMessages.length;
-    }
-    
-    if (elements.profileBio) {
-        elements.profileBio.textContent = bioText + (bioCursorVisible ? '|' : ' ');
-    }
-    
-    if (Math.random() < 0.1) {
-        if (elements.profileBio) {
-            elements.profileBio.classList.add('glitch');
-            setTimeout(() => {
-                if (elements.profileBio) {
-                    elements.profileBio.classList.remove('glitch');
-                }
-            }, 200);
-        }
-    }
-    
-    setTimeout(typeWriterBio, isBioDeleting ? 75 : 150);
+function saveConfig() {
+    localStorage.setItem("chatbotConfig", JSON.stringify(CONFIG));
 }
 
-setInterval(() => {
-    bioCursorVisible = !bioCursorVisible;
-    if (elements.profileBio) {
-        elements.profileBio.textContent = bioText + (bioCursorVisible ? '|' : ' ');
+// Charger la configuration depuis config.json
+async function fetchConfigFromFile() {
+    try {
+        const response = await fetch("config.json");
+        if (response.ok) {
+            const config = await response.json();
+            if (config.api) {
+                Object.assign(CONFIG.api, config.api);
+                saveConfig();
+            }
+        }
+    } catch (e) {
+        console.log("config.json non trouvé, utilisation de la configuration par défaut");
     }
-}, 500);
+}
 
-// ===== Theme Switching =====
-function switchTheme(theme) {
-    const themeMap = {
-        home: {
-            video: 'assets/background.mp4',
-            audio: elements.backgroundMusic,
-            class: 'home-theme',
-            color: '#00CED1'
-        },
-        hacker: {
-            video: 'assets/hacker_background.mp4',
-            audio: elements.hackerMusic,
-            class: 'hacker-theme',
-            color: '#22C55E'
-        },
-        rain: {
-            video: 'assets/rain_background.mov',
-            audio: elements.rainMusic,
-            class: 'rain-theme',
-            color: '#1E3A8A'
-        },
-        anime: {
-            video: 'assets/anime_background.mp4',
-            audio: elements.animeMusic,
-            class: 'anime-theme',
-            color: '#DC2626'
-        },
-        car: {
-            video: 'assets/car_background.mp4',
-            audio: elements.carMusic,
-            class: 'car-theme',
-            color: '#EAB308'
-        }
-    };
-
-    const themeData = themeMap[theme];
-    if (!themeData) return;
-
-    // Update primary color
-    document.documentElement.style.setProperty('--primary-color', themeData.color);
-
-    // Fade out current video
-    if (elements.background) {
-        elements.background.style.opacity = '0';
-    }
-
-    setTimeout(() => {
-        // Change video source
-        if (elements.background) {
-            elements.background.src = themeData.video;
-        }
-
-        // Switch audio
-        if (state.currentAudio) {
-            state.currentAudio.pause();
-            state.currentAudio.currentTime = 0;
-        }
-        
-        state.currentAudio = themeData.audio;
-        
-        if (state.currentAudio) {
-            state.currentAudio.volume = elements.volumeSlider ? parseFloat(elements.volumeSlider.value) : 0.3;
-            state.currentAudio.muted = state.isMuted;
+// ===== Conversations =====
+function loadConversations() {
+    const saved = localStorage.getItem("conversations");
+    if (saved) {
+        try {
+            state.conversations = JSON.parse(saved);
+            renderChatHistory();
             
-            if (!state.isMuted && state.isMusicOn) {
-                state.currentAudio.play().catch(err => {
-                    console.error('Failed to play theme music:', err);
-                });
-            }
-        }
-
-        // Update theme class
-        document.body.classList.remove('home-theme', 'hacker-theme', 'rain-theme', 'anime-theme', 'car-theme');
-        document.body.classList.add(themeData.class);
-        state.currentTheme = themeData.class;
-
-        // Hide overlays
-        if (elements.hackerOverlay) elements.hackerOverlay.classList.add('hidden');
-        if (elements.snowOverlay) elements.snowOverlay.classList.add('hidden');
-
-        // Show results button only for hacker theme
-        if (themeData.class === 'hacker-theme') {
-            if (elements.resultsButtonContainer) {
-                elements.resultsButtonContainer.classList.remove('hidden');
-            }
-        } else {
-            if (elements.resultsButtonContainer) {
-                elements.resultsButtonContainer.classList.add('hidden');
-            }
-            if (elements.skillsBlock) {
-                elements.skillsBlock.classList.add('hidden');
-            }
-            if (elements.projectsBlock) {
-                elements.projectsBlock.classList.add('hidden');
-            }
-            if (elements.resultsHint) {
-                elements.resultsHint.classList.add('hidden');
-            }
-            if (elements.profileBlock) {
-                elements.profileBlock.classList.remove('hidden');
-            }
-            state.isShowingSkills = false;
-            state.isShowingProjects = false;
-        }
-
-        // Fade in new video
-        if (elements.background) {
-            elements.background.style.opacity = '1';
-        }
-
-        // Restart profile animation
-        if (elements.profileContainer) {
-            elements.profileContainer.classList.remove('orbit');
-            void elements.profileContainer.offsetWidth;
-            elements.profileContainer.classList.add('orbit');
-        }
-        
-        updateMusicStatus();
-    }, 500);
-}
-
-// ===== Toggle Mute =====
-function toggleMute() {
-    state.isMuted = !state.isMuted;
-    
-    if (state.currentAudio) {
-        state.currentAudio.muted = state.isMuted;
-    }
-    
-    updateMusicStatus();
-}
-
-// ===== Toggle Music =====
-function toggleMusic() {
-    state.isMusicOn = !state.isMusicOn;
-    
-    if (state.currentAudio) {
-        if (state.isMusicOn && !state.isMuted) {
-            state.currentAudio.play().catch(err => {
-                console.error('Failed to play music:', err);
-            });
-        } else {
-            state.currentAudio.pause();
-        }
-    }
-    
-    updateMusicStatus();
-}
-
-// ===== Update Music Status =====
-function updateMusicStatus() {
-    if (elements.musicStatus) {
-        if (state.isMusicOn && !state.isMuted) {
-            elements.musicStatus.textContent = 'ON';
-            elements.musicStatus.style.color = 'var(--primary-color)';
-        } else {
-            elements.musicStatus.textContent = 'OFF';
-            elements.musicStatus.style.color = '#ff4444';
-        }
-    }
-}
-
-// ===== Update Transparency =====
-function updateTransparency(opacity) {
-    const blocks = [elements.profileBlock, elements.skillsBlock, elements.projectsBlock];
-    
-    blocks.forEach(block => {
-        if (block) {
-            if (opacity === 0) {
-                block.style.background = 'rgba(0, 0, 0, 0)';
-                block.style.backdropFilter = 'none';
+            // Charger la dernière conversation
+            if (state.conversations.length > 0) {
+                const lastConv = state.conversations[state.conversations.length - 1];
+                loadConversation(lastConv.id);
             } else {
-                block.style.background = `rgba(0, 0, 0, ${opacity})`;
-                block.style.backdropFilter = `blur(${10 * opacity}px)`;
+                createNewConversation();
             }
+        } catch (e) {
+            console.error("Erreur de chargement des conversations:", e);
+            state.conversations = [];
         }
-    });
-}
-
-// ===== Toggle Results =====
-function toggleResults() {
-    if (!state.isShowingSkills && !state.isShowingProjects) {
-        // Show skills
-        if (elements.profileBlock) {
-            elements.profileBlock.style.opacity = '0';
-            elements.profileBlock.style.transform = 'translate(-50%, -50%) translateX(-100px)';
-        }
-        
-        setTimeout(() => {
-            if (elements.profileBlock) {
-                elements.profileBlock.classList.add('hidden');
-            }
-            if (elements.skillsBlock) {
-                elements.skillsBlock.classList.remove('hidden');
-                elements.skillsBlock.style.opacity = '0';
-                elements.skillsBlock.style.transform = 'translate(-50%, -50%) translateX(100px)';
-                
-                setTimeout(() => {
-                    if (elements.skillsBlock) {
-                        elements.skillsBlock.style.opacity = '1';
-                        elements.skillsBlock.style.transform = 'translate(-50%, -50%)';
-                    }
-                }, 50);
-            }
-            
-            // Animate skill bars
-            animateSkillBars();
-            
-            if (elements.resultsHint) {
-                elements.resultsHint.classList.remove('hidden');
-            }
-            
-            state.isShowingSkills = true;
-        }, 500);
-    } else if (state.isShowingSkills && !state.isShowingProjects) {
-        // Show projects
-        if (elements.skillsBlock) {
-            elements.skillsBlock.style.opacity = '0';
-            elements.skillsBlock.style.transform = 'translate(-50%, -50%) translateX(-100px)';
-        }
-        
-        setTimeout(() => {
-            if (elements.skillsBlock) {
-                elements.skillsBlock.classList.add('hidden');
-            }
-            if (elements.projectsBlock) {
-                elements.projectsBlock.classList.remove('hidden');
-                elements.projectsBlock.style.opacity = '0';
-                elements.projectsBlock.style.transform = 'translate(-50%, -50%) translateX(100px)';
-                
-                setTimeout(() => {
-                    if (elements.projectsBlock) {
-                        elements.projectsBlock.style.opacity = '1';
-                        elements.projectsBlock.style.transform = 'translate(-50%, -50%)';
-                    }
-                }, 50);
-            }
-            
-            state.isShowingSkills = false;
-            state.isShowingProjects = true;
-        }, 500);
     } else {
-        // Return to profile
-        if (elements.projectsBlock) {
-            elements.projectsBlock.style.opacity = '0';
-            elements.projectsBlock.style.transform = 'translate(-50%, -50%) translateX(-100px)';
-        }
+        state.conversations = [];
+        createNewConversation();
+    }
+}
+
+function saveConversations() {
+    localStorage.setItem("conversations", JSON.stringify(state.conversations));
+}
+
+function createNewConversation() {
+    const newConv = {
+        id: generateId(),
+        title: "Nouveau chat",
+        messages: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+    
+    state.conversations.push(newConv);
+    state.currentConversationId = newConv.id;
+    state.messages = newConv.messages;
+    
+    saveConversations();
+    renderChatHistory();
+    renderMessages();
+    
+    // Réinitialiser l'input
+    elements.messageInput.value = "";
+    autoResizeTextarea();
+    updateSendButton();
+    updateTokenCount();
+    
+    // Mettre à jour le titre
+    elements.currentChatTitle.textContent = newConv.title;
+    
+    // Focus sur l'input
+    elements.messageInput.focus();
+}
+
+function loadConversation(conversationId) {
+    const conv = state.conversations.find(c => c.id === conversationId);
+    if (conv) {
+        state.currentConversationId = conversationId;
+        state.messages = conv.messages;
         
-        setTimeout(() => {
-            if (elements.projectsBlock) {
-                elements.projectsBlock.classList.add('hidden');
+        // Mettre à jour l'interface
+        renderMessages();
+        elements.currentChatTitle.textContent = conv.title;
+        
+        // Mettre à jour la sélection dans l'historique
+        document.querySelectorAll(".chat-history-item").forEach(item => {
+            item.classList.remove("active");
+            if (item.dataset.id === conversationId) {
+                item.classList.add("active");
             }
-            if (elements.profileBlock) {
-                elements.profileBlock.classList.remove('hidden');
-                elements.profileBlock.style.opacity = '0';
-                elements.profileBlock.style.transform = 'translate(-50%, -50%) translateX(100px)';
-                
-                setTimeout(() => {
-                    if (elements.profileBlock) {
-                        elements.profileBlock.style.opacity = '1';
-                        elements.profileBlock.style.transform = 'translate(-50%, -50%)';
+        });
+        
+        // Focus sur l'input
+        elements.messageInput.focus();
+    }
+}
+
+function deleteConversation(conversationId) {
+    state.conversations = state.conversations.filter(c => c.id !== conversationId);
+    
+    if (state.currentConversationId === conversationId) {
+        // Si on supprime la conversation actuelle, en créer une nouvelle
+        if (state.conversations.length > 0) {
+            loadConversation(state.conversations[0].id);
+        } else {
+            createNewConversation();
+        }
+    }
+    
+    saveConversations();
+    renderChatHistory();
+}
+
+function deleteCurrentConversation() {
+    if (state.currentConversationId) {
+        deleteConversation(state.currentConversationId);
+    }
+}
+
+function copyConversation() {
+    const conv = state.conversations.find(c => c.id === state.currentConversationId);
+    if (conv) {
+        const text = conv.messages.map(msg => 
+            `${msg.role === 'user' ? 'Vous' : 'Claude'}: ${msg.content}`
+        ).join('\n\n');
+        
+        navigator.clipboard.writeText(text).then(() => {
+            showNotification("Conversation copiée dans le presse-papiers");
+        });
+    }
+}
+
+function updateConversationTitle(conversationId, newTitle) {
+    const conv = state.conversations.find(c => c.id === conversationId);
+    if (conv) {
+        conv.title = newTitle;
+        conv.updatedAt = new Date().toISOString();
+        saveConversations();
+        renderChatHistory();
+    }
+}
+
+// ===== Messages =====
+function renderMessages() {
+    if (state.messages.length === 0) {
+        elements.messages.innerHTML = `
+            <div class="welcome-message">
+                <div class="welcome-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                </div>
+                <h1>Bonjour, je suis Claude</h1>
+                <p>Comment puis-je vous aider aujourd'hui ?</p>
+                <div class="quick-prompts">
+                    <button class="quick-prompt" data-prompt="Explique-moi l'IA">Explique-moi l'IA</button>
+                    <button class="quick-prompt" data-prompt="Écris un poème">Écris un poème</button>
+                    <button class="quick-prompt" data-prompt="Quelle est la capitale de la France ?">Quelle est la capitale de la France ?</button>
+                </div>
+            </div>
+        `;
+        
+        // Réattacher les événements aux nouveaux boutons
+        document.querySelectorAll(".quick-prompt").forEach(btn => {
+            btn.addEventListener("click", () => {
+                elements.messageInput.value = btn.dataset.prompt;
+                elements.messageInput.focus();
+                sendMessage();
+            });
+        });
+    } else {
+        elements.messages.innerHTML = state.messages.map(msg => `
+            <div class="message ${msg.role}">
+                <div class="message-avatar">
+                    ${msg.role === 'user' ? 
+                        '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>' : 
+                        '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>'
                     }
-                }, 50);
-            }
-            
-            if (elements.resultsHint) {
-                elements.resultsHint.classList.add('hidden');
-            }
-            
-            state.isShowingSkills = false;
-            state.isShowingProjects = false;
-        }, 500);
+                </div>
+                <div class="message-content">
+                    <div class="message-bubble">
+                        ${formatMessage(msg.content)}
+                    </div>
+                    <div class="message-time">
+                        ${formatTime(msg.timestamp)}
+                    </div>
+                </div>
+            </div>
+        `).join("");
     }
-}
-
-// ===== Animate Skill Bars =====
-function animateSkillBars() {
-    const skills = CONFIG.skills;
     
+    // Faire défiler vers le bas
     setTimeout(() => {
-        if (elements.pythonBar) elements.pythonBar.style.width = skills.python + '%';
+        elements.messages.scrollTop = elements.messages.scrollHeight;
     }, 100);
-    
-    setTimeout(() => {
-        if (elements.cppBar) elements.cppBar.style.width = skills.cpp + '%';
-    }, 300);
-    
-    setTimeout(() => {
-        if (elements.csharpBar) elements.csharpBar.style.width = skills.csharp + '%';
-    }, 500);
-    
-    setTimeout(() => {
-        if (elements.javascriptBar) elements.javascriptBar.style.width = skills.javascript + '%';
-    }, 700);
-    
-    setTimeout(() => {
-        if (elements.htmlBar) elements.htmlBar.style.width = skills.html + '%';
-    }, 900);
-    
-    setTimeout(() => {
-        if (elements.gitBar) elements.gitBar.style.width = skills.git + '%';
-    }, 1100);
 }
 
-// ===== Animate Profile Picture =====
-function animateProfilePicture() {
-    if (elements.profileContainer) {
-        elements.profileContainer.classList.remove('fast-orbit');
-        elements.profileContainer.classList.remove('orbit');
-        void elements.profileContainer.offsetWidth;
-        elements.profileContainer.classList.add('fast-orbit');
-        
-        setTimeout(() => {
-            if (elements.profileContainer) {
-                elements.profileContainer.classList.remove('fast-orbit');
-                void elements.profileContainer.offsetWidth;
-                elements.profileContainer.classList.add('orbit');
-            }
-        }, 500);
-    }
+function formatMessage(content) {
+    // Échapper le HTML
+    let formatted = escapeHtml(content);
     
-    // Trigger glitch overlay
-    if (elements.glitchOverlay) {
-        elements.glitchOverlay.style.opacity = '1';
-        setTimeout(() => {
-            if (elements.glitchOverlay) {
-                elements.glitchOverlay.style.opacity = '0';
-            }
-        }, 500);
-    }
+    // Appliquer le markdown de base
+    formatted = applyMarkdown(formatted);
+    
+    return formatted;
 }
 
-// ===== Save Settings =====
-function saveSettings() {
-    if (elements.usernameInput) {
-        state.username = elements.usernameInput.value;
-        localStorage.setItem('username', state.username);
-    }
-    
-    if (elements.bioInput) {
-        CONFIG.bioMessages[0] = elements.bioInput.value;
-        localStorage.setItem('bio', elements.bioInput.value);
-    }
-    
-    if (elements.themeColorInput) {
-        const color = elements.themeColorInput.value;
-        document.documentElement.style.setProperty('--primary-color', color);
-        localStorage.setItem('themeColor', color);
-    }
-    
-    // Update display
-    if (elements.profileName) {
-        elements.profileName.textContent = state.username + (nameCursorVisible ? '|' : ' ');
-    }
-    
-    // Close settings
-    if (elements.settingsPanel) {
-        elements.settingsPanel.classList.add('hidden');
-    }
-    
-    // Restart name animation
-    nameText = '';
-    nameIndex = 0;
-    isNameDeleting = false;
-    typeWriterName();
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
 }
 
-// ===== Load Settings =====
-function loadSettings() {
-    const savedUsername = localStorage.getItem('username');
-    const savedBio = localStorage.getItem('bio');
-    const savedColor = localStorage.getItem('themeColor');
+function applyMarkdown(text) {
+    // Code blocks (```)
+    text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => 
+        `<pre><code class="language-${lang}">${code.trim()}</code></pre>`
+    );
     
-    if (savedUsername) {
-        state.username = savedUsername;
-        if (elements.usernameInput) {
-            elements.usernameInput.value = savedUsername;
-        }
-    }
+    // Inline code (`)
+    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
     
-    if (savedBio) {
-        CONFIG.bioMessages[0] = savedBio;
-        if (elements.bioInput) {
-            elements.bioInput.value = savedBio;
-        }
-    }
+    // Bold (**)
+    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     
-    if (savedColor) {
-        document.documentElement.style.setProperty('--primary-color', savedColor);
-        if (elements.themeColorInput) {
-            elements.themeColorInput.value = savedColor;
-        }
-    }
+    // Italic (*)
+    text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    
+    // Headers
+    text = text.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    text = text.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+    text = text.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+    
+    // Lists
+    text = text.replace(/^\- (.+)$/gm, '<li>$1</li>');
+    text = text.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+    
+    // Links
+    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+    
+    // Blockquotes
+    text = text.replace(/^\[quote\]\n?([\s\S]*?)\n?\[\/quote\]/gm, '<blockquote>$1</blockquote>');
+    text = text.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+    
+    // Horizontal rule
+    text = text.replace(/^---$/gm, '<hr>');
+    
+    return text;
 }
 
-// ===== DOM Content Loaded =====
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded');
+function formatTime(timestamp) {
+    if (!timestamp) return "";
     
-    // Initialize
-    initMedia();
-    loadSettings();
-    
-    // Add loading animation
-    document.body.classList.add('loaded');
-});
-
-// ===== Window Load =====
-window.addEventListener('load', () => {
-    console.log('Window loaded');
-    
-    // Preload assets
-    preloadAssets();
-});
-
-// ===== Preload Assets =====
-function preloadAssets() {
-    const assetFiles = [
-        'assets/background.mp4',
-        'assets/hacker_background.mp4',
-        'assets/rain_background.mov',
-        'assets/anime_background.mp4',
-        'assets/car_background.mp4',
-        'assets/background_music.mp3',
-        'assets/hacker_music.mp3',
-        'assets/rain_music.mp3',
-        'assets/anime_music.mp3',
-        'assets/car_music.mp3',
-        'assets/profile.gif',
-        'assets/developer.png',
-        'assets/verified.gif',
-        'assets/partner.gif',
-        'assets/owner.gif',
-        'assets/github.png',
-        'assets/discord.png',
-        'assets/youtube.png',
-        'assets/tiktok.png',
-        'assets/twitter.png',
-        'assets/python.png',
-        'assets/cpp.png',
-        'assets/csharp.png',
-        'assets/javascript.png'
-    ];
-    
-    assetFiles.forEach(file => {
-        const link = document.createElement('link');
-        link.rel = 'prefetch';
-        link.href = file;
-        document.head.appendChild(link);
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('fr-FR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
     });
 }
 
-// ===== Error Handling =====
-window.addEventListener('error', (e) => {
-    console.error('Error:', e.message, e.filename, e.lineno, e.colno);
+function sendMessage() {
+    const text = elements.messageInput.value.trim();
+    if (!text || state.isLoading) return;
+    
+    // Ajouter le message de l'utilisateur
+    const userMessage = {
+        role: "user",
+        content: text,
+        timestamp: new Date().toISOString()
+    };
+    
+    state.messages.push(userMessage);
+    renderMessages();
+    
+    // Réinitialiser l'input
+    elements.messageInput.value = "";
+    autoResizeTextarea();
+    updateSendButton();
+    updateTokenCount();
+    
+    // Mettre à jour la conversation actuelle
+    if (state.currentConversationId) {
+        const conv = state.conversations.find(c => c.id === state.currentConversationId);
+        if (conv) {
+            conv.messages = [...state.messages];
+            conv.updatedAt = new Date().toISOString();
+            
+            // Mettre à jour le titre si c'est le premier message
+            if (conv.title === "Nouveau chat" && text.length < 50) {
+                conv.title = text;
+            }
+            
+            saveConversations();
+            renderChatHistory();
+        }
+    }
+    
+    // Afficher l'indicateur de saisie
+    showTypingIndicator();
+    
+    // Envoyer à l'API
+    callChatAPI(text);
+}
+
+function showTypingIndicator() {
+    state.isTyping = true;
+    const typingDiv = document.createElement("div");
+    typingDiv.className = "message ai typing";
+    typingDiv.innerHTML = `
+        <div class="message-avatar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+        </div>
+        <div class="message-content">
+            <div class="message-bubble">
+                <div class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    elements.messages.appendChild(typingDiv);
+    elements.messages.scrollTop = elements.messages.scrollHeight;
+}
+
+function removeTypingIndicator() {
+    state.isTyping = false;
+    const typingDiv = elements.messages.querySelector(".typing");
+    if (typingDiv) {
+        typingDiv.remove();
+    }
+}
+
+// ===== API Calls =====
+async function callChatAPI(userMessage) {
+    state.isLoading = true;
+    elements.sendBtn.disabled = true;
+    
+    try {
+        // Vérifier que l'API est configurée
+        if (!CONFIG.api.url || !CONFIG.api.key) {
+            throw new Error("Veuillez configurer l'URL et la clé API dans les paramètres.");
+        }
+        
+        // Préparer les messages pour l'API
+        const apiMessages = state.messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+        }));
+        
+        // Ajouter le message utilisateur (déjà ajouté, mais on s'assure)
+        apiMessages.push({
+            role: "user",
+            content: userMessage
+        });
+        
+        const requestBody = {
+            model: CONFIG.api.model,
+            messages: apiMessages,
+            temperature: CONFIG.temperature,
+            max_tokens: CONFIG.maxTokens,
+            stream: false
+        };
+        
+        const response = await fetch(CONFIG.api.url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${CONFIG.api.key}`
+            },
+            body: JSON.stringify(requestBody)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Erreur API: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Extraire la réponse
+        let aiResponse = "";
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+            aiResponse = data.choices[0].message.content;
+        } else if (data.outputs && data.outputs[0]) {
+            aiResponse = data.outputs[0].text;
+        } else if (data.completion) {
+            aiResponse = data.completion;
+        } else {
+            throw new Error("Format de réponse non reconnu");
+        }
+        
+        // Ajouter la réponse de l'AI
+        const aiMessage = {
+            role: "assistant",
+            content: aiResponse,
+            timestamp: new Date().toISOString()
+        };
+        
+        state.messages.push(aiMessage);
+        
+        // Mettre à jour la conversation
+        if (state.currentConversationId) {
+            const conv = state.conversations.find(c => c.id === state.currentConversationId);
+            if (conv) {
+                conv.messages = [...state.messages];
+                conv.updatedAt = new Date().toISOString();
+                saveConversations();
+            }
+        }
+        
+        renderMessages();
+        updateTokenCount();
+        
+    } catch (error) {
+        console.error("Erreur lors de l'appel API:", error);
+        showError(error.message);
+    } finally {
+        state.isLoading = false;
+        elements.sendBtn.disabled = false;
+        removeTypingIndicator();
+    }
+}
+
+function showError(message) {
+    const errorDiv = document.createElement("div");
+    errorDiv.className = "message ai error";
+    errorDiv.innerHTML = `
+        <div class="message-avatar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+        </div>
+        <div class="message-content">
+            <div class="message-bubble">
+                <div class="error-message">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    ${escapeHtml(message)}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    elements.messages.appendChild(errorDiv);
+    elements.messages.scrollTop = elements.messages.scrollHeight;
+}
+
+function showNotification(message) {
+    // Simple notification (pourrait être amélioré)
+    const notification = document.createElement("div");
+    notification.className = "notification";
+    notification.textContent = message;
+    notification.style.position = "fixed";
+    notification.style.bottom = "20px";
+    notification.style.right = "20px";
+    notification.style.padding = "12px 20px";
+    notification.style.backgroundColor = "var(--bg-secondary)";
+    notification.style.border = "1px solid var(--border-color)";
+    notification.style.borderRadius = "var(--radius-md)";
+    notification.style.color = "var(--text-primary)";
+    notification.style.boxShadow = "var(--shadow-md)";
+    notification.style.zIndex = "1000";
+    notification.style.animation = "slideIn 0.3s ease";
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = "slideOut 0.3s ease";
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Ajouter les animations pour les notifications
+const style = document.createElement("style");
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// ===== Chat History =====
+function renderChatHistory() {
+    if (state.conversations.length === 0) {
+        elements.chatHistory.innerHTML = "";
+        return;
+    }
+    
+    elements.chatHistory.innerHTML = state.conversations
+        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+        .map(conv => {
+            const date = new Date(conv.updatedAt);
+            const dateStr = date.toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'short'
+            });
+            
+            return `
+                <div class="chat-history-item ${conv.id === state.currentConversationId ? 'active' : ''}" 
+                     data-id="${conv.id}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <span class="chat-title">${escapeHtml(conv.title)}</span>
+                    <span class="chat-date">${dateStr}</span>
+                    <button class="delete-chat" data-id="${conv.id}" title="Supprimer">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
+            `;
+        })
+        .join("");
+    
+    // Ajouter les événements
+    document.querySelectorAll(".chat-history-item").forEach(item => {
+        item.addEventListener("click", () => {
+            loadConversation(item.dataset.id);
+        });
+    });
+    
+    document.querySelectorAll(".delete-chat").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            deleteConversation(btn.dataset.id);
+        });
+    });
+}
+
+// ===== Settings Modal =====
+function openSettings() {
+    elements.apiUrl.value = CONFIG.api.url;
+    elements.apiKey.value = CONFIG.api.key;
+    elements.apiModel.value = CONFIG.api.model;
+    elements.themeSelect.value = state.theme;
+    elements.settingsModal.classList.add("active");
+}
+
+function closeSettings() {
+    elements.settingsModal.classList.remove("active");
+}
+
+function saveSettings() {
+    CONFIG.api.url = elements.apiUrl.value.trim();
+    CONFIG.api.key = elements.apiKey.value.trim();
+    CONFIG.api.model = elements.apiModel.value;
+    state.theme = elements.themeSelect.value;
+    
+    saveConfig();
+    applyTheme();
+    closeSettings();
+    
+    showNotification("Paramètres enregistrés");
+}
+
+// ===== Utilities =====
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+// ===== Keyboard Shortcuts =====
+document.addEventListener("keydown", (e) => {
+    // Ctrl/Cmd + K : Nouveau chat
+    if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        createNewConversation();
+    }
+    
+    // Ctrl/Cmd + , : Paramètres
+    if ((e.ctrlKey || e.metaKey) && e.key === ",") {
+        e.preventDefault();
+        openSettings();
+    }
+    
+    // Échap : Fermer le modal
+    if (e.key === "Escape") {
+        closeSettings();
+    }
 });
 
-window.addEventListener('unhandledrejection', (e) => {
-    console.error('Unhandled rejection:', e.reason);
-});
+// ===== Stream Support (Optionnel) =====
+// Si vous voulez activer le streaming, décommentez cette partie
+// et modifiez callChatAPI pour utiliser l'API de streaming
 
-// ===== Console Welcome Message =====
-console.log(`
-%c Gun.Lol Clone %c v1.0 
-%c================
-%c
-%c Keyboard Shortcuts:
-%c 1-5: Switch themes
-%c M: Toggle mute
-%c S: Toggle settings
-%c ESC: Close settings
-%c
-%c Enjoy! 
-`,
-'background: linear-gradient(to right, #00CED1, #FF6B9E); color: #000; font-size: 20px; font-weight: bold; padding: 10px 20px;',
-'',
-'',
-'',
-'color: #00CED1; font-weight: bold;',
-'color: #fff;',
-'color: #fff;',
-'color: #fff;',
-'color: #fff;',
-'color: #00CED1; font-style: italic;'
-);
+/*
+async function callChatAPIStream(userMessage) {
+    state.isLoading = true;
+    elements.sendBtn.disabled = true;
+    removeTypingIndicator();
+    
+    try {
+        if (!CONFIG.api.url || !CONFIG.api.key) {
+            throw new Error("Veuillez configurer l'URL et la clé API dans les paramètres.");
+        }
+        
+        const apiMessages = state.messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+        }));
+        
+        apiMessages.push({
+            role: "user",
+            content: userMessage
+        });
+        
+        const requestBody = {
+            model: CONFIG.api.model,
+            messages: apiMessages,
+            temperature: CONFIG.temperature,
+            max_tokens: CONFIG.maxTokens,
+            stream: true
+        };
+        
+        const response = await fetch(CONFIG.api.url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${CONFIG.api.key}`
+            },
+            body: JSON.stringify(requestBody)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Erreur API: ${response.status}`);
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let aiResponse = "";
+        
+        // Créer un message vide pour l'AI
+        const aiMessage = {
+            role: "assistant",
+            content: "",
+            timestamp: new Date().toISOString()
+        };
+        
+        state.messages.push(aiMessage);
+        renderMessages();
+        
+        // Lire le stream
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            const lines = chunk.split("\n").filter(line => line.trim() !== "");
+            
+            for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                    const dataStr = line.substring(6);
+                    if (dataStr === "[DONE]") continue;
+                    
+                    try {
+                        const data = JSON.parse(dataStr);
+                        if (data.choices && data.choices[0] && data.choices[0].delta) {
+                            const delta = data.choices[0].delta;
+                            if (delta.content) {
+                                aiMessage.content += delta.content;
+                                aiResponse += delta.content;
+                                
+                                // Mettre à jour l'affichage
+                                renderMessages();
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Erreur de parsing du chunk:", e);
+                    }
+                }
+            }
+        }
+        
+        // Mettre à jour la conversation
+        if (state.currentConversationId) {
+            const conv = state.conversations.find(c => c.id === state.currentConversationId);
+            if (conv) {
+                conv.messages = [...state.messages];
+                conv.updatedAt = new Date().toISOString();
+                saveConversations();
+            }
+        }
+        
+        updateTokenCount();
+        
+    } catch (error) {
+        console.error("Erreur lors de l'appel API:", error);
+        showError(error.message);
+        
+        // Supprimer le message vide si erreur
+        if (state.messages.length > 0 && state.messages[state.messages.length - 1].role === "assistant" && 
+            state.messages[state.messages.length - 1].content === "") {
+            state.messages.pop();
+            renderMessages();
+        }
+    } finally {
+        state.isLoading = false;
+        elements.sendBtn.disabled = false;
+    }
+}
+*/
+
+// ===== Export for testing =====
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        CONFIG,
+        state,
+        sendMessage,
+        callChatAPI,
+        formatMessage,
+        estimateTokenCount
+    };
+}

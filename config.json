@@ -1,107 +1,12 @@
 {
-    "site": {
-        "title": "Gun.Lol Clone - Profile",
-        "version": "1.0.0",
-        "description": "A fully customizable profile website inspired by gun.lol"
-    },
-    "user": {
-        "username": "GunLolUser",
-        "displayName": "GunLol User",
-        "bio": [
-            "Professional Developer | Creating Amazing Things",
-            "Building the future with code",
-            "Passionate about technology and innovation"
-        ],
-        "startMessage": "WELCOME TO MY PROFILE",
-        "startSubtitle": "Click anywhere to enter"
-    },
-    "stats": {
-        "visitorCount": 1234567,
-        "followers": "10K",
-        "projects": "25",
-        "years": "5+"
-    },
-    "social": {
-        "github": "https://github.com",
-        "discord": "https://discord.gg/motiongoats",
-        "youtube": "https://youtube.com",
-        "tiktok": "https://tiktok.com",
-        "twitter": "https://twitter.com"
-    },
-    "badges": [
-        {"icon": "developer.png", "text": "Developer", "tooltip": "Developer Badge"},
-        {"icon": "verified.gif", "text": "Verified", "tooltip": "Verified Badge"},
-        {"icon": "partner.gif", "text": "Partner", "tooltip": "Partner Badge"},
-        {"icon": "owner.gif", "text": "Owner", "tooltip": "Owner Badge"}
-    ],
-    "skills": [
-        {"name": "Python", "percent": 95, "icon": "python.png"},
-        {"name": "C++", "percent": 88, "icon": "cpp.png"},
-        {"name": "C#", "percent": 82, "icon": "csharp.png"},
-        {"name": "JavaScript", "percent": 90, "icon": "javascript.png"},
-        {"name": "HTML/CSS", "percent": 98, "icon": "", "emoji": "&#128187;"},
-        {"name": "Git", "percent": 85, "icon": "", "emoji": "&#128100;"}
-    ],
-    "projects": [
-        {
-            "name": "Gun.Lol Clone",
-            "description": "A complete profile website clone",
-            "icon": "&#128187;",
-            "link": "#"
-        },
-        {
-            "name": "Discord Bot",
-            "description": "Multi-purpose bot with 100+ commands",
-            "icon": "&#128293;",
-            "link": "#"
-        },
-        {
-            "name": "Game Server",
-            "description": "Custom game server with anti-cheat",
-            "icon": "&#127915;",
-            "link": "#"
-        }
-    ],
-    "themes": {
-        "home": {
-            "video": "assets/background.mp4",
-            "music": "assets/background_music.mp3",
-            "primaryColor": "#00CED1",
-            "secondaryColor": "#FF6B9E"
-        },
-        "hacker": {
-            "video": "assets/hacker_background.mp4",
-            "music": "assets/hacker_music.mp3",
-            "primaryColor": "#22C55E",
-            "secondaryColor": "#2DD4BF"
-        },
-        "rain": {
-            "video": "assets/rain_background.mov",
-            "music": "assets/rain_music.mp3",
-            "primaryColor": "#1E3A8A",
-            "secondaryColor": "#2563EB"
-        },
-        "anime": {
-            "video": "assets/anime_background.mp4",
-            "music": "assets/anime_music.mp3",
-            "primaryColor": "#DC2626",
-            "secondaryColor": "#F87171"
-        },
-        "car": {
-            "video": "assets/car_background.mp4",
-            "music": "assets/car_music.mp3",
-            "primaryColor": "#EAB308",
-            "secondaryColor": "#FACC15"
-        }
-    },
-    "settings": {
-        "defaultVolume": 0.3,
-        "defaultTransparency": 0.7,
-        "musicOn": true,
-        "muted": false,
-        "showVisitorCounter": true,
-        "showStats": true,
-        "showSocialLinks": true,
-        "showBadges": true
-    }
+  "api": {
+    "url": "https://api.mistral.ai/v1/chat/completions",
+    "key": "VOTRE_CLE_API_ICI",
+    "model": "mistral-tiny"
+  },
+  "settings": {
+    "temperature": 0.7,
+    "maxTokens": 32000,
+    "theme": "light"
+  }
 }
