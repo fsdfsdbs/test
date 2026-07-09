@@ -1,6 +1,7 @@
 /**
  * UI Manager Class
  * Manages all UI operations for the Claude AI Chatbot Clone
+ * Enhanced for coding: code preview, syntax highlighting, action buttons
  */
 
 import {
@@ -37,6 +38,7 @@ export class UIManager {
     constructor() {
         this.elements = {};
         this.eventListeners = {};
+        this.currentPreviewCode = null;
         this.initElements();
     }
     
@@ -113,6 +115,365 @@ export class UIManager {
         this.setupEventListeners();
         this.setupTheme();
         this.setupFontSize();
+        this.injectCodeStyles();
+        this.injectCodePreviewModal();
+    }
+    
+    /**
+     * Inject code highlighting styles and library
+     */
+    injectCodeStyles() {
+        // Inject code-styles.css
+        const codeStyles = createElement('link', {
+            rel: 'stylesheet',
+            href: 'styles/code-styles.css'
+        });
+        document.head.appendChild(codeStyles);
+        
+        // Inject highlight.js
+        if (!document.querySelector('script[src*="highlight.js"]')) {
+            const hljsScript = createElement('script', {
+                src: 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js',
+                async: true
+            });
+            hljsScript.onload = () => this.setupHighlightJS();
+            document.head.appendChild(hljsScript);
+        } else {
+            this.setupHighlightJS();
+        }
+    }
+    
+    /**
+     * Setup Highlight.js
+     */
+    setupHighlightJS() {
+        if (!window.hljs) {
+            setTimeout(() => this.setupHighlightJS(), 100);
+            return;
+        }
+        
+        // Register languages
+        const languages = ['javascript', 'python', 'html', 'css', 'bash', 'json', 'typescript', 'java', 'c', 'cpp', 'php', 'ruby', 'go', 'rust', 'swift', 'kotlin'];
+        languages.forEach(lang => {
+            try {
+                window.hljs.registerLanguage(lang, require(`highlight.js/lib/languages/${lang}`));
+            } catch (e) {
+                console.warn(`Failed to load syntax highlighting for ${lang}`);
+            }
+        });
+        
+        window.hljs.configure({
+            tabReplace: '    ',
+            useBR: false,
+            languages: languages
+        });
+    }
+    
+    /**
+     * Highlight all code blocks in the chat
+     */
+    highlightAllCodeBlocks() {
+        if (!window.hljs) {
+            setTimeout(() => this.highlightAllCodeBlocks(), 100);
+            return;
+        }
+        
+        querySelectorAll('pre code').forEach((block) => {
+            if (!block.classList.contains('hljs')) {
+                window.hljs.highlightElement(block);
+            }
+        });
+    }
+    
+    /**
+     * Inject code preview modal
+     */
+    injectCodePreviewModal() {
+        const modal = createElement('div', {
+            id: 'codePreviewModal',
+            className: 'modal-overlay'
+        });
+        
+        modal.innerHTML = `
+            <div class="modal code-preview-modal">
+                <div class="modal-header">
+                    <h2>Preview Code</h2>
+                    <button class="close-btn close-code-preview-btn" aria-label="Close">
+                        ${createIcon('M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z', { width: '18', height: '18' })}
+                    </button>
+                </div>
+                <div class="modal-body code-preview-body">
+                    <div class="code-preview-content"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary close-code-preview-btn">Fermer</button>
+                    <button class="btn btn-primary run-code-preview-btn">Exécuter</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Setup event listeners
+        querySelectorAll('.close-code-preview-btn', modal).forEach(btn => {
+            addEventListener(btn, 'click', () => this.closeCodePreview());
+        });
+        
+        const runBtn = querySelector('.run-code-preview-btn', modal);
+        if (runBtn) {
+            addEventListener(runBtn, 'click', () => this.runCodePreview());
+        }
+        
+        addEventListener(modal, 'click', (e) => {
+            if (e.target === modal) this.closeCodePreview();
+        });
+        
+        // Store references
+        this.codePreviewModal = modal;
+        this.codePreviewContent = querySelector('.code-preview-content', modal);
+    }
+    
+    /**
+     * Open code preview
+     * @param {string} code - Code to preview
+     * @param {string} language - Code language
+     */
+    openCodePreview(code, language = 'javascript') {
+        if (!this.codePreviewModal) return;
+        
+        emptyElement(this.codePreviewContent);
+        
+        const codeElement = createElement('pre');
+        const codeBlock = createElement('code', {
+            className: `hljs language-${language}`,
+            textContent: code
+        });
+        codeElement.appendChild(codeBlock);
+        this.codePreviewContent.appendChild(codeElement);
+        
+        this.currentPreviewCode = { code, language };
+        addClass(this.codePreviewModal, 'active');
+        
+        // Highlight after a small delay
+        setTimeout(() => {
+            if (window.hljs) window.hljs.highlightElement(codeBlock);
+        }, 10);
+    }
+    
+    /**
+     * Close code preview
+     */
+    closeCodePreview() {
+        if (!this.codePreviewModal) return;
+        removeClass(this.codePreviewModal, 'active');
+        this.currentPreviewCode = null;
+    }
+    
+    /**
+     * Run code from preview
+     */
+    runCodePreview() {
+        if (!this.currentPreviewCode) return;
+        
+        const { code, language } = this.currentPreviewCode;
+        this.runCode(code, language);
+    }
+    
+    /**
+     * Run code
+     * @param {string} code - Code to run
+     * @param {string} language - Code language
+     */
+    runCode(code, language) {
+        if (language !== 'javascript' && language !== 'js') {
+            showToast('Seul le JavaScript peut être exécuté directement', 'error');
+            return;
+        }
+        
+        try {
+            const sandbox = {
+                console: {
+                    log: (...args) => this.showCodeOutput(args, 'log'),
+                    error: (...args) => this.showCodeOutput(args, 'error'),
+                    warn: (...args) => this.showCodeOutput(args, 'warn'),
+                    info: (...args) => this.showCodeOutput(args, 'info')
+                },
+                result: null
+            };
+            
+            // Wrap code in a function for safety
+            const wrappedCode = `
+                (function(sandbox) {
+                    'use strict';
+                    with (sandbox) {
+                        ${code}
+                    }
+                    return sandbox;
+                })
+            `;
+            
+            const func = new Function('sandbox', wrappedCode);
+            func(sandbox);
+            
+            this.showCodeOutput(['Code exécuté avec succès!'], 'success');
+        } catch (error) {
+            this.showCodeOutput(['Erreur: ' + error.message], 'error');
+        }
+    }
+    
+    /**
+     * Show code output
+     * @param {Array} args - Output arguments
+     * @param {string} type - Output type
+     */
+    showCodeOutput(args, type) {
+        const output = args.map(arg => {
+            if (typeof arg === 'object') {
+                return JSON.stringify(arg, null, 2);
+            }
+            return String(arg);
+        }).join(' ');
+        
+        const outputEl = createElement('div', {
+            className: `code-output ${type}`
+        });
+        outputEl.textContent = output;
+        
+        const messageEl = createElement('div', {
+            className: 'message ai'
+        });
+        
+        const avatar = createElement('div', {
+            className: 'message-avatar'
+        });
+        avatar.appendChild(createIcon('M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z', { width: '18', height: '18' }));
+        
+        const content = createElement('div', {
+            className: 'message-content'
+        });
+        content.appendChild(outputEl);
+        
+        const time = createElement('div', {
+            className: 'message-time',
+            textContent: new Date().toLocaleTimeString('fr-FR')
+        });
+        content.appendChild(time);
+        
+        messageEl.append(avatar, content);
+        this.elements.messages.appendChild(messageEl);
+        scrollToBottom(this.elements.messages);
+    }
+    
+    /**
+     * Create enhanced code block
+     * @param {string} code - Code content
+     * @param {string} language - Code language
+     * @returns {HTMLElement} Code block element
+     */
+    createCodeBlock(code, language) {
+        const container = createElement('div', {
+            className: 'code-block-container'
+        });
+        
+        // Header
+        const header = createElement('div', {
+            className: 'code-block-header'
+        });
+        
+        const langSpan = createElement('span', {
+            className: 'code-block-language',
+            textContent: language || 'text'
+        });
+        header.appendChild(langSpan);
+        
+        const actions = createElement('div', {
+            className: 'code-block-actions'
+        });
+        
+        // Copy button
+        const copyBtn = createElement('button', {
+            className: 'code-block-action-btn copy-code-btn',
+            title: 'Copier',
+            innerHTML: createIcon('M16 1c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2H4zm12 0h-8v2h8V1z', { width: '14', height: '14' })
+        });
+        
+        // Preview button
+        const previewBtn = createElement('button', {
+            className: 'code-block-action-btn preview-code-btn',
+            title: 'Preview',
+            innerHTML: createIcon('M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z', { width: '14', height: '14' })
+        });
+        
+        // Run button (for JS)
+        const runBtn = createElement('button', {
+            className: 'code-block-action-btn run-code-btn',
+            title: 'Exécuter',
+            innerHTML: createIcon('M8 5v14l11-7z', { width: '14', height: '14' })
+        });
+        
+        actions.append(copyBtn, previewBtn);
+        if (language === 'javascript' || language === 'js') {
+            actions.appendChild(runBtn);
+        }
+        header.appendChild(actions);
+        container.appendChild(header);
+        
+        // Code content
+        const pre = createElement('pre');
+        const codeEl = createElement('code', {
+            className: `language-${language || 'text'}`,
+            textContent: code
+        });
+        pre.appendChild(codeEl);
+        container.appendChild(pre);
+        
+        // Add event listeners
+        copyBtn.addEventListener('click', () => this.copyCode(code));
+        previewBtn.addEventListener('click', () => this.openCodePreview(code, language));
+        runBtn.addEventListener('click', () => this.runCode(code, language));
+        
+        // Highlight code
+        if (window.hljs) {
+            window.hljs.highlightElement(codeEl);
+        }
+        
+        return container;
+    }
+    
+    /**
+     * Copy code to clipboard
+     * @param {string} code - Code to copy
+     */
+    copyCode(code) {
+        navigator.clipboard.writeText(code).then(() => {
+            showToast('Code copié dans le presse-papiers', 'success');
+        }).catch(() => {
+            showToast('Erreur lors de la copie', 'error');
+        });
+    }
+    
+    /**
+     * Format message with enhanced code blocks
+     * @param {string} content - Message content
+     * @returns {string} Formatted HTML
+     */
+    formatMessageWithCodeBlocks(content) {
+        let formatted = formatMessage(content);
+        
+        const tempDiv = createElement('div');
+        tempDiv.innerHTML = formatted;
+        
+        const codeBlocks = tempDiv.querySelectorAll('pre code');
+        codeBlocks.forEach((codeBlock) => {
+            const code = codeBlock.textContent;
+            const language = codeBlock.className.match(/language-(\w+)/)?.[1] || 'text';
+            
+            const parentPre = codeBlock.parentElement;
+            const container = this.createCodeBlock(code, language);
+            parentPre.replaceWith(container);
+        });
+        
+        return tempDiv.innerHTML;
     }
     
     /**
@@ -253,6 +614,7 @@ export class UIManager {
         if (e.key === 'Escape') {
             this.closeSettings();
             this.closeShareModal();
+            this.closeCodePreview();
         }
     }
     
@@ -656,7 +1018,8 @@ export class UIManager {
         
         messages.forEach(msg => {
             const messageEl = createMessageElement(msg, msg.role);
-            messageEl.querySelector('.message-bubble').innerHTML = formatMessage(msg.content);
+            const bubble = messageEl.querySelector('.message-bubble');
+            bubble.innerHTML = this.formatMessageWithCodeBlocks(msg.content);
             this.elements.messages.appendChild(messageEl);
         });
         
@@ -668,6 +1031,9 @@ export class UIManager {
         
         // Scroll to bottom
         scrollToBottom(this.elements.messages);
+        
+        // Highlight code blocks
+        setTimeout(() => this.highlightAllCodeBlocks(), 50);
     }
     
     /**
@@ -676,9 +1042,13 @@ export class UIManager {
      */
     addMessage(message) {
         const messageEl = createMessageElement(message, message.role);
-        messageEl.querySelector('.message-bubble').innerHTML = formatMessage(message.content);
+        const bubble = messageEl.querySelector('.message-bubble');
+        bubble.innerHTML = this.formatMessageWithCodeBlocks(message.content);
         this.elements.messages.appendChild(messageEl);
         scrollToBottom(this.elements.messages);
+        
+        // Highlight code
+        setTimeout(() => this.highlightAllCodeBlocks(), 50);
     }
     
     /**
@@ -693,9 +1063,12 @@ export class UIManager {
         if (updates.content) {
             const bubble = querySelector('.message-bubble', messageEl);
             if (bubble) {
-                bubble.innerHTML = formatMessage(updates.content);
+                bubble.innerHTML = this.formatMessageWithCodeBlocks(updates.content);
             }
         }
+        
+        // Re-highlight code
+        setTimeout(() => this.highlightAllCodeBlocks(), 50);
     }
     
     /**
@@ -780,5 +1153,4 @@ export class UIManager {
 
 // Singleton instance
 export const uiManager = new UIManager();
-
 export default UIManager;
