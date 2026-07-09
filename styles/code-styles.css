@@ -1,0 +1,648 @@
+/* ============================================
+   Code-Specific Styles for Claude AI Chatbot Clone
+   Enhanced UI for coding: syntax highlighting, code blocks, action buttons
+   ============================================ */
+
+/* Import Highlight.js Theme (Dark) */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css');
+
+/* Override Highlight.js to match our theme */
+.hljs {
+    background: #1e1e1e !important;
+    padding: 1rem !important;
+    border-radius: 0.5rem !important;
+    font-family: 'Fira Code', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
+    font-size: 0.875rem !important;
+    line-height: 1.6 !important;
+    overflow-x: auto !important;
+    margin: 0 !important;
+}
+
+/* Code Block Container (for messages) */
+.code-block-container {
+    position: relative;
+    margin: 0.5rem 0;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: #2d2d2d;
+    border: 1px solid #3a3a3a;
+}
+
+.code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    background: #3a3a3a;
+    border-bottom: 1px solid #4a4a4a;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.75rem;
+    color: #a1a1aa;
+}
+
+.code-block-language {
+    padding: 0.125rem 0.5rem;
+    background: #4a4a4a;
+    border-radius: 0.25rem;
+    font-weight: 600;
+}
+
+.code-block-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.code-block-action-btn {
+    background: transparent;
+    border: none;
+    color: #a1a1aa;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s ease;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.code-block-action-btn:hover {
+    background: #4a4a4a;
+    color: #f5f5f5;
+}
+
+.code-block-action-btn.copied {
+    color: #10b981;
+}
+
+.code-block-action-btn.error {
+    color: #ef4444;
+}
+
+.code-block-action-btn .icon {
+    width: 14px;
+    height: 14px;
+}
+
+/* Preview for Code Execution */
+.code-preview {
+    position: relative;
+    margin-top: 0.5rem;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: #1e1e1e;
+    border: 1px solid #3a3a3a;
+}
+
+.code-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3a3a3a;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.75rem;
+    color: #a1a1aa;
+}
+
+.code-preview-title {
+    font-weight: 600;
+}
+
+.code-preview-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.code-preview-result {
+    padding: 1rem;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #f5f5f5;
+    background: #1e1e1e;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.code-preview-result.error {
+    color: #ef4444;
+}
+
+.code-preview-result.success {
+    color: #10b981;
+}
+
+/* Inline Code Enhancements */
+.message-bubble inline-code {
+    background: #3a3a3a;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-family: 'Fira Code', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.875em;
+    color: #58a6ff;
+}
+
+/* Run Code Button (for JS) */
+.run-code-btn {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.run-code-btn:hover {
+    background: #2563eb;
+}
+
+.run-code-btn .icon {
+    width: 12px;
+    height: 12px;
+}
+
+.run-code-btn:disabled {
+    background: #4a4a4a;
+    color: #71717a;
+    cursor: not-allowed;
+}
+
+/* Code Output Console */
+.code-console {
+    margin-top: 0.5rem;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: #1e1e1e;
+    border: 1px solid #3a3a3a;
+}
+
+.code-console-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3a3a3a;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.75rem;
+    color: #a1a1aa;
+}
+
+.code-console-content {
+    padding: 1rem;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #f5f5f5;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.code-console-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: #2d2d2d;
+    border-top: 1px solid #3a3a3a;
+}
+
+.code-console-input input {
+    flex: 1;
+    background: #1e1e1e;
+    border: 1px solid #3a3a3a;
+    border-radius: 0.25rem;
+    padding: 0.375rem 0.5rem;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.875rem;
+    color: #f5f5f5;
+}
+
+.code-console-input button {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.75rem;
+}
+
+/* Syntax Highlighting for Markdown Code Blocks */
+pre code.hljs {
+    background: transparent !important;
+    padding: 0 !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+}
+
+/* Code Fold/Unfold */
+.code-fold-btn {
+    background: transparent;
+    border: none;
+    color: #a1a1aa;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+}
+
+.code-fold-btn:hover {
+    background: #4a4a4a;
+    color: #f5f5f5;
+}
+
+.code-fold-btn .icon {
+    width: 12px;
+    height: 12px;
+    transition: transform 0.2s ease;
+}
+
+.code-fold-btn.folded .icon {
+    transform: rotate(-90deg);
+}
+
+/* Code Line Numbers */
+.code-line-numbers {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 3rem;
+    padding: 1rem 0.5rem;
+    background: #2d2d2d;
+    border-right: 1px solid #3a3a3a;
+    color: #71717a;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    text-align: right;
+    user-select: none;
+    overflow: hidden;
+}
+
+.code-with-lines {
+    position: relative;
+    counter-reset: line;
+}
+
+.code-with-lines code {
+    counter-reset: line;
+}
+
+.code-with-lines code > span {
+    display: block;
+    position: relative;
+}
+
+.code-with-lines code > span::before {
+    counter-increment: line;
+    content: counter(line);
+    position: absolute;
+    left: -4rem;
+    color: #71717a;
+    text-align: right;
+    width: 3rem;
+    padding-right: 0.5rem;
+}
+
+/* File Tree Preview (for code projects) */
+.file-tree {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.875rem;
+    background: #1e1e1e;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    margin: 0.5rem 0;
+}
+
+.file-tree-header {
+    padding: 0.5rem 0.75rem;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3a3a3a;
+    color: #a1a1aa;
+    font-size: 0.75rem;
+}
+
+.file-tree-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    color: #f5f5f5;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.file-tree-item:hover {
+    background: #2d2d2d;
+}
+
+.file-tree-item .icon {
+    width: 14px;
+    height: 14px;
+    color: #58a6ff;
+    flex-shrink: 0;
+}
+
+.file-tree-item .file-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-tree-item .file-size {
+    color: #71717a;
+    font-size: 0.75rem;
+}
+
+.file-tree-item.folder {
+    font-weight: 600;
+}
+
+.file-tree-item.folder .icon {
+    color: #f59e0b;
+}
+
+/* Diff Viewer Styles */
+.diff-container {
+    background: #1e1e1e;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    margin: 0.5rem 0;
+    border: 1px solid #3a3a3a;
+}
+
+.diff-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3a3a3a;
+    color: #a1a1aa;
+    font-size: 0.75rem;
+}
+
+.diff-content {
+    display: flex;
+    padding: 0;
+}
+
+.diff-side {
+    flex: 1;
+    overflow: auto;
+    padding: 0.5rem;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.875rem;
+    line-height: 1.6;
+}
+
+.diff-line {
+    display: flex;
+    padding: 0.125rem 0.5rem;
+    white-space: pre;
+}
+
+.diff-line.added {
+    background: rgba(16, 185, 129, 0.15);
+}
+
+.diff-line.removed {
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.diff-line-number {
+    color: #71717a;
+    user-select: none;
+    padding-right: 0.5rem;
+    min-width: 2.5rem;
+    text-align: right;
+}
+
+.diff-line-prefix {
+    width: 1rem;
+    flex-shrink: 0;
+    color: #58a6ff;
+    font-weight: 600;
+}
+
+.diff-line-prefix.added {
+    color: #10b981;
+}
+
+.diff-line-prefix.removed {
+    color: #ef4444;
+}
+
+/* Terminal Emulator Styles */
+.terminal {
+    background: #1e1e1e;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    margin: 0.5rem 0;
+    border: 1px solid #3a3a3a;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+.terminal-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: #2d2d2d;
+    border-bottom: 1px solid #3a3a3a;
+    color: #a1a1aa;
+    font-size: 0.75rem;
+}
+
+.terminal-controls {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.terminal-control {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background: #4a4a4a;
+}
+
+.terminal-control.close {
+    background: #ef4444;
+}
+
+.terminal-control.minimize {
+    background: #f59e0b;
+}
+
+.terminal-control.maximize {
+    background: #10b981;
+}
+
+.terminal-title {
+    flex: 1;
+    text-align: center;
+    font-size: 0.75rem;
+}
+
+.terminal-body {
+    padding: 1rem;
+    color: #f5f5f5;
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.terminal-prompt {
+    color: #58a6ff;
+}
+
+.terminal-output {
+    color: #f5f5f5;
+}
+
+.terminal-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.terminal-input input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #f5f5f5;
+    font-family: inherit;
+    font-size: inherit;
+    outline: none;
+}
+
+/* Responsive for Code Blocks */
+@media (max-width: 768px) {
+    .code-block-container {
+        border-radius: 0.5rem;
+    }
+    
+    .code-block-header {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.625rem;
+    }
+    
+    .code-block-actions {
+        gap: 0.125rem;
+    }
+    
+    .code-block-action-btn {
+        padding: 0.125rem;
+    }
+    
+    .code-line-numbers {
+        width: 2.5rem;
+        padding: 0.5rem 0.25rem;
+        font-size: 0.75rem;
+    }
+    
+    .code-with-lines code > span::before {
+        left: -3rem;
+        width: 2.5rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Animations for Code Blocks */
+@keyframes codeFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.code-block-container,
+.code-preview,
+.code-console,
+.file-tree,
+.diff-container,
+.terminal {
+    animation: codeFadeIn 0.3s ease;
+}
+
+/* Code Block Tooltip */
+.code-tooltip {
+    position: absolute;
+    background: #2d2d2d;
+    border: 1px solid #3a3a3a;
+    border-radius: 0.375rem;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+    color: #f5f5f5;
+    z-index: 1000;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+/* Code Block Fullscreen */
+.code-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.code-fullscreen-content {
+    width: 90%;
+    max-width: 800px;
+    height: 80%;
+    background: #1e1e1e;
+    border-radius: 0.5rem;
+    overflow: auto;
+    position: relative;
+    border: 1px solid #3a3a3a;
+}
+
+.code-fullscreen-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: #2d2d2d;
+    border: none;
+    color: #f5f5f5;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.code-fullscreen-close:hover {
+    background: #3a3a3a;
+}
