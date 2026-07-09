@@ -39,6 +39,9 @@ export class UIManager {
         this.elements = {};
         this.eventListeners = {};
         this.currentPreviewCode = null;
+        this.highlightJSLoaded = false;
+        this.highlightJSRetries = 0;
+        this.maxHighlightJSRetries = 5;
         this.initElements();
     }
     
@@ -117,6 +120,9 @@ export class UIManager {
         this.setupFontSize();
         this.injectCodeStyles();
         this.injectCodePreviewModal();
+        
+        // Hide loading screen after UI is ready
+        setTimeout(() => this.hideLoading(), 500);
     }
     
     /**
@@ -130,16 +136,48 @@ export class UIManager {
         });
         document.head.appendChild(codeStyles);
         
-        // Inject highlight.js
-        if (!document.querySelector('script[src*="highlight.js"]')) {
+        // Load highlight.js if not already loaded
+        this.loadHighlightJS();
+    }
+    
+    /**
+     * Load highlight.js with retry logic
+     */
+    loadHighlightJS() {
+        if (this.highlightJSLoaded || this.highlightJSRetries >= this.maxHighlightJSRetries) {
+            return;
+        }
+        
+        if (window.hljs) {
+            this.setupHighlightJS();
+            return;
+        }
+        
+        // Check if script is already in the DOM
+        const existingScript = document.querySelector('script[src*="highlight.js"]');
+        if (!existingScript) {
             const hljsScript = createElement('script', {
                 src: 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js',
                 async: true
             });
             hljsScript.onload = () => this.setupHighlightJS();
+            hljsScript.onerror = () => {
+                this.highlightJSRetries++;
+                console.warn(`Failed to load highlight.js (attempt ${this.highlightJSRetries}/${this.maxHighlightJSRetries})`);
+                if (this.highlightJSRetries < this.maxHighlightJSRetries) {
+                    setTimeout(() => this.loadHighlightJS(), 1000);
+                } else {
+                    console.error('highlight.js failed to load after multiple attempts');
+                    showToast('Impossible de charger la coloration syntaxique', 'error');
+                }
+            };
             document.head.appendChild(hljsScript);
         } else {
-            this.setupHighlightJS();
+            // Script exists, wait for it to load
+            this.highlightJSRetries++;
+            if (this.highlightJSRetries < this.maxHighlightJSRetries) {
+                setTimeout(() => this.loadHighlightJS(), 500);
+            }
         }
     }
     
@@ -148,47 +186,72 @@ export class UIManager {
      */
     setupHighlightJS() {
         if (!window.hljs) {
-            setTimeout(() => this.setupHighlightJS(), 100);
+            console.warn('highlight.js not loaded yet');
             return;
         }
         
-        // Register languages
-        const languages = ['javascript', 'python', 'html', 'css', 'bash', 'json', 'typescript', 'java', 'c', 'cpp', 'php', 'ruby', 'go', 'rust', 'swift', 'kotlin'];
-        languages.forEach(lang => {
-            try {
-                window.hljs.registerLanguage(lang, require(`highlight.js/lib/languages/${lang}`));
-            } catch (e) {
-                console.warn(`Failed to load syntax highlighting for ${lang}`);
-            }
-        });
+        if (this.highlightJSLoaded) return;
+        this.highlightJSLoaded = true;
         
-        window.hljs.configure({
-            tabReplace: '    ',
-            useBR: false,
-            languages: languages
-        });
+        try {
+            // Register languages
+            const languages = ['javascript', 'python', 'html', 'css', 'bash', 'json', 'typescript', 'java', 'c', 'cpp', 'php', 'ruby', 'go', 'rust', 'swift', 'kotlin'];
+            languages.forEach(lang => {
+                try {
+                    // Use dynamic import for ES modules
+                    // Note: This won't work in all browsers, but we'll try
+                    import(`https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/es/languages/${lang}.min.js`)
+                        .then(module => {
+                            if (module && module.default) {
+                                window.hljs.registerLanguage(lang, module.default);
+                            }
+                        })
+                        .catch(() => {
+                            // Fallback: language might already be registered
+                            console.warn(`Could not load syntax highlighting for ${lang}`);
+                        });
+                } catch (e) {
+                    console.warn(`Failed to load syntax highlighting for ${lang}: ${e.message}`);
+                }
+            });
+            
+            window.hljs.configure({
+                tabReplace: '    ',
+                useBR: false,
+                languages: languages
+            });
+            
+            console.log('highlight.js configured successfully');
+        } catch (e) {
+            console.error('Error configuring highlight.js:', e);
+        }
     }
     
     /**
      * Highlight all code blocks in the chat
      */
     highlightAllCodeBlocks() {
-        if (!window.hljs) {
-            setTimeout(() => this.highlightAllCodeBlocks(), 100);
+        if (!window.hljs || !this.highlightJSLoaded) {
             return;
         }
         
-        querySelectorAll('pre code').forEach((block) => {
-            if (!block.classList.contains('hljs')) {
-                window.hljs.highlightElement(block);
-            }
-        });
+        try {
+            querySelectorAll('pre code').forEach((block) => {
+                if (!block.classList.contains('hljs')) {
+                    window.hljs.highlightElement(block);
+                }
+            });
+        } catch (e) {
+            console.error('Error highlighting code blocks:', e);
+        }
     }
     
     /**
      * Inject code preview modal
      */
     injectCodePreviewModal() {
+        if (document.getElementById('codePreviewModal')) return;
+        
         const modal = createElement('div', {
             id: 'codePreviewModal',
             className: 'modal-overlay'
@@ -245,7 +308,7 @@ export class UIManager {
         
         const codeElement = createElement('pre');
         const codeBlock = createElement('code', {
-            className: `hljs language-${language}`,
+            className: `language-${language}`,
             textContent: code
         });
         codeElement.appendChild(codeBlock);
@@ -256,7 +319,9 @@ export class UIManager {
         
         // Highlight after a small delay
         setTimeout(() => {
-            if (window.hljs) window.hljs.highlightElement(codeBlock);
+            if (window.hljs && this.highlightJSLoaded) {
+                window.hljs.highlightElement(codeBlock);
+            }
         }, 10);
     }
     
@@ -432,9 +497,13 @@ export class UIManager {
         previewBtn.addEventListener('click', () => this.openCodePreview(code, language));
         runBtn.addEventListener('click', () => this.runCode(code, language));
         
-        // Highlight code
-        if (window.hljs) {
-            window.hljs.highlightElement(codeEl);
+        // Highlight code if possible
+        if (window.hljs && this.highlightJSLoaded) {
+            try {
+                window.hljs.highlightElement(codeEl);
+            } catch (e) {
+                console.warn('Could not highlight code:', e);
+            }
         }
         
         return container;
@@ -481,60 +550,68 @@ export class UIManager {
      */
     setupEventListeners() {
         // Sidebar
-        addEventListener(this.elements.newChatBtn, 'click', () => this.emit('newChat'));
-        addEventListener(this.elements.settingsBtn, 'click', () => this.openSettings());
-        addEventListener(this.elements.mobileMenuBtn, 'click', () => this.toggleSidebar());
+        if (this.elements.newChatBtn) addEventListener(this.elements.newChatBtn, 'click', () => this.emit('newChat'));
+        if (this.elements.settingsBtn) addEventListener(this.elements.settingsBtn, 'click', () => this.openSettings());
+        if (this.elements.mobileMenuBtn) addEventListener(this.elements.mobileMenuBtn, 'click', () => this.toggleSidebar());
         
         // Search
-        addEventListener(this.elements.searchInput, 'input', (e) => this.handleSearch(e));
-        addEventListener(this.elements.clearSearchBtn, 'click', () => this.clearSearch());
+        if (this.elements.searchInput) addEventListener(this.elements.searchInput, 'input', (e) => this.handleSearch(e));
+        if (this.elements.clearSearchBtn) addEventListener(this.elements.clearSearchBtn, 'click', () => this.clearSearch());
         
         // Chat
-        addEventListener(this.elements.messageInput, 'input', () => this.handleInputChange());
-        addEventListener(this.elements.messageInput, 'keydown', (e) => this.handleKeyDown(e));
-        addEventListener(this.elements.sendBtn, 'click', () => this.emit('sendMessage'));
-        addEventListener(this.elements.stopBtn, 'click', () => this.emit('stopStream'));
-        addEventListener(this.elements.copyChatBtn, 'click', () => this.emit('copyChat'));
-        addEventListener(this.elements.shareChatBtn, 'click', () => this.openShareModal());
-        addEventListener(this.elements.deleteChatBtn, 'click', () => this.emit('deleteChat'));
-        addEventListener(this.elements.closeChatBtn, 'click', () => this.emit('closeChat'));
+        if (this.elements.messageInput) {
+            addEventListener(this.elements.messageInput, 'input', () => this.handleInputChange());
+            addEventListener(this.elements.messageInput, 'keydown', (e) => this.handleKeyDown(e));
+        }
+        if (this.elements.sendBtn) addEventListener(this.elements.sendBtn, 'click', () => this.emit('sendMessage'));
+        if (this.elements.stopBtn) addEventListener(this.elements.stopBtn, 'click', () => this.emit('stopStream'));
+        if (this.elements.copyChatBtn) addEventListener(this.elements.copyChatBtn, 'click', () => this.emit('copyChat'));
+        if (this.elements.shareChatBtn) addEventListener(this.elements.shareChatBtn, 'click', () => this.openShareModal());
+        if (this.elements.deleteChatBtn) addEventListener(this.elements.deleteChatBtn, 'click', () => this.emit('deleteChat'));
+        if (this.elements.closeChatBtn) addEventListener(this.elements.closeChatBtn, 'click', () => this.emit('closeChat'));
         
         // Settings Modal
-        addEventListener(this.elements.closeSettingsBtn, 'click', () => this.closeSettings());
-        addEventListener(this.elements.cancelSettingsBtn, 'click', () => this.closeSettings());
-        addEventListener(this.elements.saveSettingsBtn, 'click', () => this.saveSettings());
-        addEventListener(this.elements.togglePassword, 'click', () => this.togglePasswordVisibility());
-        addEventListener(this.elements.apiProvider, 'change', (e) => this.handleProviderChange(e));
-        addEventListener(this.elements.temperature, 'input', (e) => this.updateTemperatureValue(e));
+        if (this.elements.closeSettingsBtn) addEventListener(this.elements.closeSettingsBtn, 'click', () => this.closeSettings());
+        if (this.elements.cancelSettingsBtn) addEventListener(this.elements.cancelSettingsBtn, 'click', () => this.closeSettings());
+        if (this.elements.saveSettingsBtn) addEventListener(this.elements.saveSettingsBtn, 'click', () => this.saveSettings());
+        if (this.elements.togglePassword) addEventListener(this.elements.togglePassword, 'click', () => this.togglePasswordVisibility());
+        if (this.elements.apiProvider) addEventListener(this.elements.apiProvider, 'change', (e) => this.handleProviderChange(e));
+        if (this.elements.temperature) addEventListener(this.elements.temperature, 'input', (e) => this.updateTemperatureValue(e));
         
         // Share Modal
-        addEventListener(this.elements.closeShareBtn, 'click', () => this.closeShareModal());
-        addEventListener(this.elements.copyLinkBtn, 'click', () => this.emit('copyLink'));
-        addEventListener(this.elements.exportJsonBtn, 'click', () => this.emit('exportJson'));
-        addEventListener(this.elements.exportHtmlBtn, 'click', () => this.emit('exportHtml'));
+        if (this.elements.closeShareBtn) addEventListener(this.elements.closeShareBtn, 'click', () => this.closeShareModal());
+        if (this.elements.copyLinkBtn) addEventListener(this.elements.copyLinkBtn, 'click', () => this.emit('copyLink'));
+        if (this.elements.exportJsonBtn) addEventListener(this.elements.exportJsonBtn, 'click', () => this.emit('exportJson'));
+        if (this.elements.exportHtmlBtn) addEventListener(this.elements.exportHtmlBtn, 'click', () => this.emit('exportHtml'));
         
         // Quick prompts
         querySelectorAll('.quick-prompt').forEach(btn => {
             addEventListener(btn, 'click', () => {
                 const prompt = btn.dataset.prompt;
-                this.elements.messageInput.value = prompt;
-                focusElement(this.elements.messageInput);
-                this.emit('sendMessage');
+                if (this.elements.messageInput) {
+                    this.elements.messageInput.value = prompt;
+                    focusElement(this.elements.messageInput);
+                    this.emit('sendMessage');
+                }
             });
         });
         
         // Modal close on overlay click
-        addEventListener(this.elements.settingsModal, 'click', (e) => {
-            if (e.target === this.elements.settingsModal) {
-                this.closeSettings();
-            }
-        });
+        if (this.elements.settingsModal) {
+            addEventListener(this.elements.settingsModal, 'click', (e) => {
+                if (e.target === this.elements.settingsModal) {
+                    this.closeSettings();
+                }
+            });
+        }
         
-        addEventListener(this.elements.shareModal, 'click', (e) => {
-            if (e.target === this.elements.shareModal) {
-                this.closeShareModal();
-            }
-        });
+        if (this.elements.shareModal) {
+            addEventListener(this.elements.shareModal, 'click', (e) => {
+                if (e.target === this.elements.shareModal) {
+                    this.closeShareModal();
+                }
+            });
+        }
         
         // Keyboard shortcuts
         addEventListener(document, 'keydown', (e) => this.handleKeyboardShortcuts(e));
@@ -586,9 +663,11 @@ export class UIManager {
      * Handle input change
      */
     handleInputChange() {
-        autoResizeTextarea(this.elements.messageInput);
-        this.updateSendButton();
-        this.updateTokenCount();
+        if (this.elements.messageInput) {
+            autoResizeTextarea(this.elements.messageInput);
+            this.updateSendButton();
+            this.updateTokenCount();
+        }
     }
     
     /**
@@ -638,7 +717,9 @@ export class UIManager {
         // Ctrl/Cmd + F: Focus search
         if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
             e.preventDefault();
-            focusElement(this.elements.searchInput);
+            if (this.elements.searchInput) {
+                focusElement(this.elements.searchInput);
+            }
         }
     }
     
@@ -646,19 +727,23 @@ export class UIManager {
      * Update send button state
      */
     updateSendButton() {
-        const hasText = this.elements.messageInput.value.trim().length > 0;
-        this.elements.sendBtn.disabled = !hasText;
+        if (this.elements.sendBtn) {
+            const hasText = this.elements.messageInput?.value.trim().length > 0;
+            this.elements.sendBtn.disabled = !hasText;
+        }
     }
     
     /**
      * Update token count display
      */
     updateTokenCount() {
-        const text = this.elements.messageInput.value;
-        const tokenCount = estimateTokenCount(text);
-        const totalTokens = this.getTotalMessageTokens() + tokenCount;
-        
-        this.elements.tokenCount.textContent = `${totalTokens} / ${this.elements.maxTokens?.value || 32000} jetons`;
+        if (this.elements.tokenCount && this.elements.messageInput) {
+            const text = this.elements.messageInput.value;
+            const tokenCount = estimateTokenCount(text);
+            const totalTokens = this.getTotalMessageTokens() + tokenCount;
+            
+            this.elements.tokenCount.textContent = `${totalTokens} / ${this.elements.maxTokens?.value || 32000} jetons`;
+        }
     }
     
     /**
@@ -680,10 +765,12 @@ export class UIManager {
      */
     handleSearch(e) {
         const query = e.target.value.toLowerCase();
-        if (query) {
-            addClass(this.elements.clearSearchBtn, 'visible');
-        } else {
-            removeClass(this.elements.clearSearchBtn, 'visible');
+        if (this.elements.clearSearchBtn) {
+            if (query) {
+                addClass(this.elements.clearSearchBtn, 'visible');
+            } else {
+                removeClass(this.elements.clearSearchBtn, 'visible');
+            }
         }
         this.emit('search', { query });
     }
@@ -692,8 +779,12 @@ export class UIManager {
      * Clear search
      */
     clearSearch() {
-        this.elements.searchInput.value = '';
-        removeClass(this.elements.clearSearchBtn, 'visible');
+        if (this.elements.searchInput) {
+            this.elements.searchInput.value = '';
+        }
+        if (this.elements.clearSearchBtn) {
+            removeClass(this.elements.clearSearchBtn, 'visible');
+        }
         this.emit('search', { query: '' });
     }
     
@@ -701,7 +792,9 @@ export class UIManager {
      * Toggle sidebar (mobile)
      */
     toggleSidebar() {
-        toggleClass(this.elements.sidebar, 'active');
+        if (this.elements.sidebar) {
+            toggleClass(this.elements.sidebar, 'active');
+        }
     }
     
     /**
@@ -758,43 +851,55 @@ export class UIManager {
      * Show loading screen
      */
     showLoading() {
-        addClass(this.elements.loadingScreen, 'hidden');
+        if (this.elements.loadingScreen) {
+            addClass(this.elements.loadingScreen, 'hidden');
+        }
     }
     
     /**
      * Hide loading screen
      */
     hideLoading() {
-        removeClass(this.elements.loadingScreen, 'hidden');
+        if (this.elements.loadingScreen) {
+            removeClass(this.elements.loadingScreen, 'hidden');
+        }
     }
     
     /**
      * Open settings modal
      */
     openSettings() {
-        addClass(this.elements.settingsModal, 'active');
-        this.loadSettingsForm();
+        if (this.elements.settingsModal) {
+            addClass(this.elements.settingsModal, 'active');
+            this.loadSettingsForm();
+        }
     }
     
     /**
      * Close settings modal
      */
     closeSettings() {
-        removeClass(this.elements.settingsModal, 'active');
+        if (this.elements.settingsModal) {
+            removeClass(this.elements.settingsModal, 'active');
+        }
     }
     
     /**
      * Open share modal
      */
     openShareModal() {
-        addClass(this.elements.shareModal, 'active');
+        if (this.elements.shareModal) {
+            addClass(this.elements.shareModal, 'active');
+        }
     }
     
     /**
      * Close share modal
      */
     closeShareModal() {
-        removeClass(this.elements.shareModal, 'active');
+        if (this.elements.shareModal) {
+            removeClass(this.elements.shareModal, 'active');
+        }
     }
     
     /**
@@ -804,7 +909,7 @@ export class UIManager {
         const config = JSON.parse(localStorage.getItem('chatbotConfig') || '{}');
         
         // API Settings
-        if (config.api) {
+        if (config.api && this.elements.apiProvider) {
             this.elements.apiProvider.value = config.api.provider || 'mistral';
             this.elements.apiUrl.value = config.api.url || '';
             this.elements.apiKey.value = config.api.key || '';
@@ -813,17 +918,33 @@ export class UIManager {
         
         // UI Settings
         if (config.settings) {
-            this.elements.temperature.value = config.settings.temperature || 0.7;
-            this.elements.temperatureValue.textContent = this.elements.temperature.value;
-            this.elements.maxTokens.value = config.settings.maxTokens || 32000;
-            this.elements.theme.value = config.settings.theme || 'system';
-            this.elements.fontSize.value = config.settings.fontSize || 'medium';
-            this.elements.enableStreaming.checked = config.settings.enableStreaming !== false;
-            this.elements.saveHistory.checked = config.settings.saveHistory !== false;
-            this.elements.enterToSend.checked = config.settings.enterToSend || false;
+            if (this.elements.temperature) {
+                this.elements.temperature.value = config.settings.temperature || 0.7;
+                this.elements.temperatureValue.textContent = this.elements.temperature.value;
+            }
+            if (this.elements.maxTokens) {
+                this.elements.maxTokens.value = config.settings.maxTokens || 32000;
+            }
+            if (this.elements.theme) {
+                this.elements.theme.value = config.settings.theme || 'system';
+            }
+            if (this.elements.fontSize) {
+                this.elements.fontSize.value = config.settings.fontSize || 'medium';
+            }
+            if (this.elements.enableStreaming) {
+                this.elements.enableStreaming.checked = config.settings.enableStreaming !== false;
+            }
+            if (this.elements.saveHistory) {
+                this.elements.saveHistory.checked = config.settings.saveHistory !== false;
+            }
+            if (this.elements.enterToSend) {
+                this.elements.enterToSend.checked = config.settings.enterToSend || false;
+            }
         }
         
-        this.handleProviderChange({ target: this.elements.apiProvider });
+        if (this.elements.apiProvider) {
+            this.handleProviderChange({ target: this.elements.apiProvider });
+        }
     }
     
     /**
@@ -832,19 +953,19 @@ export class UIManager {
     saveSettings() {
         const config = {
             api: {
-                provider: this.elements.apiProvider.value,
-                url: this.elements.apiUrl.value.trim(),
-                key: this.elements.apiKey.value.trim(),
-                model: this.elements.apiModel.value
+                provider: this.elements.apiProvider?.value || 'mistral',
+                url: this.elements.apiUrl?.value.trim() || '',
+                key: this.elements.apiKey?.value.trim() || '',
+                model: this.elements.apiModel?.value || 'mistral-tiny'
             },
             settings: {
-                temperature: parseFloat(this.elements.temperature.value),
-                maxTokens: parseInt(this.elements.maxTokens.value),
-                theme: this.elements.theme.value,
-                fontSize: this.elements.fontSize.value,
-                enableStreaming: this.elements.enableStreaming.checked,
-                saveHistory: this.elements.saveHistory.checked,
-                enterToSend: this.elements.enterToSend.checked
+                temperature: parseFloat(this.elements.temperature?.value) || 0.7,
+                maxTokens: parseInt(this.elements.maxTokens?.value) || 32000,
+                theme: this.elements.theme?.value || 'system',
+                fontSize: this.elements.fontSize?.value || 'medium',
+                enableStreaming: this.elements.enableStreaming?.checked !== false,
+                saveHistory: this.elements.saveHistory?.checked !== false,
+                enterToSend: this.elements.enterToSend?.checked || false
             }
         };
         
@@ -867,6 +988,8 @@ export class UIManager {
      * @param {Event} e - Change event
      */
     handleProviderChange(e) {
+        if (!this.elements.apiProvider || !this.elements.apiUrl) return;
+        
         const provider = e.target.value;
         const providers = {
             mistral: 'https://api.mistral.ai/v1/chat/completions',
@@ -891,6 +1014,8 @@ export class UIManager {
      * @param {Array} models - Array of model names
      */
     updateModelOptions(models) {
+        if (!this.elements.apiModel) return;
+        
         const modelSelect = this.elements.apiModel;
         const currentValue = modelSelect.value;
         
@@ -915,13 +1040,17 @@ export class UIManager {
      * @param {Event} e - Input event
      */
     updateTemperatureValue(e) {
-        this.elements.temperatureValue.textContent = e.target.value;
+        if (this.elements.temperatureValue) {
+            this.elements.temperatureValue.textContent = e.target.value;
+        }
     }
     
     /**
      * Toggle password visibility
      */
     togglePasswordVisibility() {
+        if (!this.elements.apiKey || !this.elements.togglePassword) return;
+        
         const type = this.elements.apiKey.type === 'password' ? 'text' : 'password';
         this.elements.apiKey.type = type;
         this.elements.togglePassword.innerHTML = '';
@@ -944,7 +1073,9 @@ export class UIManager {
      * @param {string} model - Model name
      */
     updateModelInfo(model) {
-        this.elements.modelInfo.textContent = `Modèle: ${model}`;
+        if (this.elements.modelInfo) {
+            this.elements.modelInfo.textContent = `Modèle: ${model}`;
+        }
     }
     
     /**
@@ -954,6 +1085,8 @@ export class UIManager {
      * @param {string} searchQuery - Search query
      */
     renderConversations(conversations, currentId = null, searchQuery = '') {
+        if (!this.elements.chatHistory) return;
+        
         emptyElement(this.elements.chatHistory);
         
         if (conversations.length === 0) {
@@ -1006,6 +1139,8 @@ export class UIManager {
      * @param {boolean} isTyping - Is AI typing
      */
     renderMessages(messages, isLoading = false, isTyping = false) {
+        if (!this.elements.messages || !this.elements.welcomeMessage) return;
+        
         emptyElement(this.elements.messages);
         
         if (messages.length === 0 && !isLoading && !isTyping) {
@@ -1019,7 +1154,9 @@ export class UIManager {
         messages.forEach(msg => {
             const messageEl = createMessageElement(msg, msg.role);
             const bubble = messageEl.querySelector('.message-bubble');
-            bubble.innerHTML = this.formatMessageWithCodeBlocks(msg.content);
+            if (bubble) {
+                bubble.innerHTML = this.formatMessageWithCodeBlocks(msg.content);
+            }
             this.elements.messages.appendChild(messageEl);
         });
         
@@ -1041,9 +1178,13 @@ export class UIManager {
      * @param {Object} message - Message to add
      */
     addMessage(message) {
+        if (!this.elements.messages) return;
+        
         const messageEl = createMessageElement(message, message.role);
         const bubble = messageEl.querySelector('.message-bubble');
-        bubble.innerHTML = this.formatMessageWithCodeBlocks(message.content);
+        if (bubble) {
+            bubble.innerHTML = this.formatMessageWithCodeBlocks(message.content);
+        }
         this.elements.messages.appendChild(messageEl);
         scrollToBottom(this.elements.messages);
         
@@ -1075,9 +1216,11 @@ export class UIManager {
      * Show typing indicator
      */
     showTypingIndicator() {
-        const typingEl = createTypingIndicator();
-        this.elements.messages.appendChild(typingEl);
-        scrollToBottom(this.elements.messages);
+        if (this.elements.messages) {
+            const typingEl = createTypingIndicator();
+            this.elements.messages.appendChild(typingEl);
+            scrollToBottom(this.elements.messages);
+        }
     }
     
     /**
@@ -1095,9 +1238,11 @@ export class UIManager {
      * @param {string} message - Error message
      */
     showError(message) {
-        const errorEl = createErrorElement(message);
-        this.elements.messages.appendChild(errorEl);
-        scrollToBottom(this.elements.messages);
+        if (this.elements.messages) {
+            const errorEl = createErrorElement(message);
+            this.elements.messages.appendChild(errorEl);
+            scrollToBottom(this.elements.messages);
+        }
     }
     
     /**
@@ -1105,40 +1250,50 @@ export class UIManager {
      * @param {string} title - New title
      */
     updateChatTitle(title) {
-        this.elements.chatTitleInput.value = title;
+        if (this.elements.chatTitleInput) {
+            this.elements.chatTitleInput.value = title;
+        }
     }
     
     /**
      * Clear message input
      */
     clearInput() {
-        this.elements.messageInput.value = '';
-        autoResizeTextarea(this.elements.messageInput);
-        this.updateSendButton();
-        this.updateTokenCount();
+        if (this.elements.messageInput) {
+            this.elements.messageInput.value = '';
+            autoResizeTextarea(this.elements.messageInput);
+            this.updateSendButton();
+            this.updateTokenCount();
+        }
     }
     
     /**
      * Focus message input
      */
     focusInput() {
-        focusElement(this.elements.messageInput);
+        if (this.elements.messageInput) {
+            focusElement(this.elements.messageInput);
+        }
     }
     
     /**
      * Show stop button
      */
     showStopButton() {
-        this.elements.sendBtn.style.display = 'none';
-        this.elements.stopBtn.style.display = 'flex';
+        if (this.elements.sendBtn && this.elements.stopBtn) {
+            this.elements.sendBtn.style.display = 'none';
+            this.elements.stopBtn.style.display = 'flex';
+        }
     }
     
     /**
      * Hide stop button
      */
     hideStopButton() {
-        this.elements.sendBtn.style.display = 'flex';
-        this.elements.stopBtn.style.display = 'none';
+        if (this.elements.sendBtn && this.elements.stopBtn) {
+            this.elements.sendBtn.style.display = 'flex';
+            this.elements.stopBtn.style.display = 'none';
+        }
     }
     
     /**
@@ -1146,8 +1301,12 @@ export class UIManager {
      * @param {boolean} disabled - Is disabled
      */
     setInputDisabled(disabled) {
-        this.elements.messageInput.disabled = disabled;
-        this.elements.sendBtn.disabled = disabled;
+        if (this.elements.messageInput) {
+            this.elements.messageInput.disabled = disabled;
+        }
+        if (this.elements.sendBtn) {
+            this.elements.sendBtn.disabled = disabled;
+        }
     }
 }
 
