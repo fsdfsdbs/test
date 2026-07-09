@@ -1,9 +1,9 @@
 {
   "api": {
-    "provider": "mistral",
-    "url": "https://api.mistral.ai/v1/chat/completions",
-    "key": "VOTRE_CLE_API_ICI",
-    "model": "mistral-tiny"
+    "provider": "openai",
+    "url": "https://models.github.ai/inference",
+    "key": "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",
+    "model": "deepseek/DeepSeek-V3"
   },
   "settings": {
     "temperature": 0.7,
