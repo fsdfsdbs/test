@@ -3,37 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claude AI Chatbot Clone - Optimisé pour le Codage</title>
+    <title>Claude AI Chatbot Clone - Test Page (Optimisé pour le Codage)</title>
+    
+    <!-- Styles -->
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/code-styles.css">
-    <!-- Highlight.js theme -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
+    
     <style>
-        /* Custom styles for code-focused UI */
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        /* Ensure Fira Code is used for code blocks */
-        code, pre, .hljs {
-            font-family: 'Fira Code', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
-        }
-        
-        /* Dark theme by default for coding */
         :root {
             --color-bg-primary: #1e1e1e;
             --color-bg-secondary: #2d2d2d;
             --color-bg-tertiary: #3a3a3a;
             --color-text-primary: #f5f5f5;
             --color-text-secondary: #a1a1aa;
-            --color-text-tertiary: #71717a;
             --color-border: #3a3a3a;
+            --color-primary: #58a6ff;
+        }
+        
+        body {
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        code, pre, .hljs {
+            font-family: 'Fira Code', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace !important;
+        }
+        
+        .loading-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-bg-primary);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1200;
+        }
+        
+        .loading-screen.hidden {
+            display: none;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            animation: rotate 2s linear infinite;
+        }
+        
+        .spinner .path {
+            stroke: var(--color-primary);
+            stroke-linecap: round;
+            animation: dash 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes dash {
+            0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+            50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+            100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
         }
     </style>
 </head>
-<body>
+<body data-theme="dark">
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
@@ -51,7 +92,7 @@
                     <circle cx="11" cy="11" r="8"/>
                     <path d="M21 21l-4.35-4.35"/>
                 </svg>
-                <input type="text" id="searchInput" placeholder="Rechercher dans les conversations...">
+                <input type="text" id="searchInput" placeholder="Rechercher...">
                 <button class="clear-search-btn" id="clearSearchBtn">
                     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 6L6 18M6 6l12 12"/>
@@ -70,8 +111,8 @@
                         </svg>
                     </div>
                     <div class="user-details">
-                        <div class="user-name">Utilisateur</div>
-                        <div class="user-status">En ligne</div>
+                        <div class="user-name">Test - Développeur</div>
+                        <div class="user-status">Mode codage</div>
                     </div>
                 </div>
                 <button class="settings-btn" id="settingsBtn" aria-label="Paramètres">
@@ -102,7 +143,7 @@
                         <input type="text" class="chat-title-input" id="chatTitleInput" placeholder="Nouveau chat" readonly>
                     </div>
                     <div class="chat-actions">
-                        <button class="chat-action-btn copy-chat-btn" id="copyChatBtn" aria-label="Copier le chat">
+                        <button class="chat-action-btn copy-chat-btn" id="copyChatBtn" aria-label="Copier">
                             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M16 1c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2H4zm12 0h-8v2h8V1z"/>
                             </svg>
@@ -121,11 +162,6 @@
                                 <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                             </svg>
                         </button>
-                        <button class="chat-action-btn close-chat-btn mobile-only" id="closeChatBtn" aria-label="Fermer">
-                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 6L6 18M6 6l12 12"/>
-                            </svg>
-                        </button>
                     </div>
                 </header>
                 
@@ -138,33 +174,14 @@
                                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                             </svg>
                         </div>
-                        <h1>Bienvenue dans ton Chatbot IA pour Développeurs</h1>
-                        <p>Commence une conversation pour obtenir de l'aide avec ton code, des explications, ou des exemples.</p>
+                        <h1>Page de Test - Chatbot pour Développeurs</h1>
+                        <p>Cette page teste l'interface optimisée pour le codage. Ouvre <a href="index.html" style="color: var(--color-primary);">index.html</a> pour la version complète.</p>
                         <div class="quick-prompts">
-                            <button class="quick-prompt" data-prompt="Explique-moi comment fonctionne cette fonction JavaScript: function add(a, b) { return a + b; }">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                </svg>
-                                <span>Expliquer du code</span>
+                            <button class="quick-prompt" data-prompt="Explique-moi ce code JavaScript: function factorial(n) { return n <= 1 ? 1 : n * factorial(n - 1); }">
+                                <span>Tester le code</span>
                             </button>
-                            <button class="quick-prompt" data-prompt="Corrige ce code JavaScript: function sum(arr) { let total; for (let i = 0; i < arr.length; i++) { total += arr[i]; } return total; }">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                </svg>
-                                <span>Corriger du code</span>
-                            </button>
-                            <button class="quick-prompt" data-prompt="Génère un exemple de code pour un API REST en Node.js avec Express">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                                </svg>
+                            <button class="quick-prompt" data-prompt="Génère un exemple de classe en JavaScript">
                                 <span>Générer du code</span>
-                            </button>
-                            <button class="quick-prompt" data-prompt="Quelles sont les meilleures pratiques pour le code JavaScript moderne?">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0 1 12 2.944a11.955 11.955 0 0 1-8.618 3.04A12.02 12.02 0 0 0 3 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                                </svg>
-                                <span>Meilleures pratiques</span>
                             </button>
                         </div>
                     </div>
@@ -175,9 +192,8 @@
                     <div class="input-container">
                         <textarea 
                             id="messageInput" 
-                            placeholder="Écris un message ou colle du code... (Ctrl+K pour un nouveau chat)"
+                            placeholder="Teste l'interface ici..."
                             rows="1"
-                            autofocus
                         ></textarea>
                         <button class="stop-btn" id="stopBtn" style="display: none;" aria-label="Arrêter">
                             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -216,14 +232,14 @@
                     <div class="form-group">
                         <label for="apiProvider">Fournisseur</label>
                         <select id="apiProvider">
-                            <option value="mistral">Mistral AI</option>
+                            <option value="mistral" selected>Mistral AI</option>
                             <option value="openai">OpenAI</option>
                             <option value="groq">Groq</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="apiUrl">URL de l'API</label>
-                        <input type="text" id="apiUrl" placeholder="https://api.mistral.ai/v1/chat/completions">
+                        <input type="text" id="apiUrl" placeholder="https://api.mistral.ai/v1/chat/completions" value="https://api.mistral.ai/v1/chat/completions">
                     </div>
                     <div class="form-group password-input">
                         <label for="apiKey">Clé API</label>
@@ -238,7 +254,7 @@
                     <div class="form-group">
                         <label for="apiModel">Modèle</label>
                         <select id="apiModel">
-                            <option value="mistral-tiny">mistral-tiny</option>
+                            <option value="mistral-tiny" selected>mistral-tiny</option>
                         </select>
                     </div>
                 </div>
@@ -262,15 +278,7 @@
                         <select id="theme">
                             <option value="system">Système</option>
                             <option value="light">Clair</option>
-                            <option value="dark">Sombre</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="fontSize">Taille de la police</label>
-                        <select id="fontSize">
-                            <option value="small">Petite</option>
-                            <option value="medium" selected>Moyenne</option>
-                            <option value="large">Grande</option>
+                            <option value="dark" selected>Sombre</option>
                         </select>
                     </div>
                 </div>
@@ -289,13 +297,6 @@
                             <input type="checkbox" id="saveHistory" checked>
                             <span class="checkmark"></span>
                             <span>Sauvegarder l'historique</span>
-                        </label>
-                    </div>
-                    <div class="checkbox-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="enterToSend">
-                            <span class="checkmark"></span>
-                            <span>Envoyer avec Entrée (sinon Shift+Entrée)</span>
                         </label>
                     </div>
                 </div>
@@ -337,16 +338,6 @@
                         </svg>
                         <span>Exporter en JSON</span>
                     </button>
-                    <button class="share-option" id="exportHtmlBtn">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14,2 14,8 20,8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                            <polyline points="10,9 9,9 8,9"/>
-                        </svg>
-                        <span>Exporter en HTML</span>
-                    </button>
                 </div>
             </div>
         </div>
@@ -362,23 +353,49 @@
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
     
-    <!-- Scripts -->
-    <script type="module">
-        // Import and initialize the app
-        import { ChatApp } from './scripts/classes/ChatApp.js';
-        window.chatApp = new ChatApp();
+    <!-- Load highlight.js BEFORE the module script -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    
+    <!-- Register languages for highlight.js -->
+    <script>
+        // Configure highlight.js immediately
+        hljs.configure({
+            tabReplace: '    ',
+            useBR: false,
+            languages: ['javascript', 'python', 'html', 'css', 'bash', 'json']
+        });
     </script>
     
-    <!-- Highlight.js for syntax highlighting -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script>
-        // Register additional languages
-        hljs.registerLanguage('javascript', require('highlight.js/lib/languages/javascript'));
-        hljs.registerLanguage('python', require('highlight.js/lib/languages/python'));
-        hljs.registerLanguage('html', require('highlight.js/lib/languages/xml'));
-        hljs.registerLanguage('css', require('highlight.js/lib/languages/css'));
-        hljs.registerLanguage('bash', require('highlight.js/lib/languages/bash'));
-        hljs.registerLanguage('json', require('highlight.js/lib/languages/json'));
+    <!-- Main app script (ES Module) -->
+    <script type="module">
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Import and initialize the app
+                const { ChatApp } = await import('./scripts/classes/ChatApp.js');
+                window.chatApp = new ChatApp();
+                
+                // Hide loading screen after app is ready
+                const loadingScreen = document.getElementById('loadingScreen');
+                if (loadingScreen) {
+                    setTimeout(() => {
+                        loadingScreen.classList.add('hidden');
+                    }, 500);
+                }
+            } catch (error) {
+                console.error('Error loading app:', error);
+                const loadingScreen = document.getElementById('loadingScreen');
+                if (loadingScreen) {
+                    loadingScreen.innerHTML = `
+                        <div style="text-align: center; color: #ef4444; padding: 20px;">
+                            <h2>Erreur de chargement</h2>
+                            <p>${error.message}</p>
+                            <p>Veuillez rafraîchir la page ou vérifier la console (F12).</p>
+                        </div>
+                    `;
+                }
+            }
+        });
     </script>
 </body>
 </html>
