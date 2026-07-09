@@ -1,6 +1,7 @@
 /**
  * Markdown Parser Module
  * Converts markdown to HTML for the Claude AI Chatbot Clone
+ * Enhanced for coding: better code block detection and formatting
  */
 
 import { escapeHtml } from './helpers.js';
@@ -108,7 +109,7 @@ function applyCodeBlocks(html) {
     });
     
     // Indented code blocks (4 spaces)
-    html = html.replace(/^    (.+)$/gm, '<pre><code>$1</code></pre>');
+    html = html.replace(/^    (.+)$/gm, '<pre><code class="language-text">$1</code></pre>');
     
     return html;
 }
@@ -120,7 +121,7 @@ function applyCodeBlocks(html) {
  */
 function applyInlineCode(html) {
     // `code`
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
     return html;
 }
 
@@ -310,9 +311,75 @@ export function extractCodeBlocks(markdown) {
     return codeBlocks;
 }
 
+/**
+ * Extract inline code from markdown
+ * @param {string} markdown - Markdown text
+ * @returns {Array} Array of code strings
+ */
+export function extractInlineCode(markdown) {
+    const inlineCode = [];
+    const regex = /`([^`]+)`/g;
+    let match;
+    
+    while ((match = regex.exec(markdown)) !== null) {
+        inlineCode.push(match[1]);
+    }
+    
+    return inlineCode;
+}
+
+/**
+ * Detect code language from content
+ * @param {string} code - Code content
+ * @returns {string} Detected language
+ */
+export function detectCodeLanguage(code) {
+    // Simple detection based on common patterns
+    if (!code) return 'text';
+    
+    const trimmed = code.trim();
+    
+    // Check for shebangs
+    if (trimmed.startsWith('#!/bin/bash') || trimmed.startsWith('#!/usr/bin/env bash')) {
+        return 'bash';
+    }
+    if (trimmed.startsWith('#!/usr/bin/env python') || trimmed.startsWith('#!/usr/bin/python')) {
+        return 'python';
+    }
+    
+    // Check for common patterns
+    if (trimmed.startsWith('<?php')) return 'php';
+    if (trimmed.startsWith('<?xml') || trimmed.includes('<html')) return 'html';
+    if (trimmed.includes('function(') || trimmed.includes('=>') || trimmed.includes('const ') || trimmed.includes('let ') || trimmed.includes('var ')) {
+        return 'javascript';
+    }
+    if (trimmed.includes('import ') || trimmed.includes('def ') || trimmed.includes('class ') || trimmed.includes('print(')) {
+        return 'python';
+    }
+    if (trimmed.includes('public class') || trimmed.includes('System.out')) {
+        return 'java';
+    }
+    if (trimmed.includes('#include') || trimmed.includes('cout <<') || trimmed.includes('cin >>')) {
+        return 'cpp';
+    }
+    if (trimmed.includes('SELECT ') || trimmed.includes('FROM ') || trimmed.includes('WHERE ')) {
+        return 'sql';
+    }
+    if (trimmed.includes('func ') || trimmed.includes('package main')) {
+        return 'go';
+    }
+    if (trimmed.includes('fn ') || trimmed.includes('let ') || trimmed.includes('mut ')) {
+        return 'rust';
+    }
+    
+    return 'text';
+}
+
 export default {
     parseMarkdown,
     sanitizeHtml,
     formatMessage,
-    extractCodeBlocks
+    extractCodeBlocks,
+    extractInlineCode,
+    detectCodeLanguage
 };
