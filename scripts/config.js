@@ -8,7 +8,7 @@ const DEFAULT_CONFIG = {
         provider: 'openrouter',
         url: 'https://openrouter.ai/api/v1/chat/completions',
         key: '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', // <-- mets ta clé ici
-        model: 'deepseek/deepseek-r1:free'
+        model: 'openai/gpt-oss-120b:free'
     },
     settings: {
         temperature: 0.7,
