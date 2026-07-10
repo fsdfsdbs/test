@@ -3,211 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claude AI Chatbot Clone - Test Page (Optimisé pour le Codage)</title>
+    <title>Test - Chatbot GitHub DeepSeek</title>
     
-    <!-- Styles -->
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/code-styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
     
     <style>
         :root {
             --color-bg-primary: #1e1e1e;
             --color-bg-secondary: #2d2d2d;
-            --color-bg-tertiary: #3a3a3a;
             --color-text-primary: #f5f5f5;
-            --color-text-secondary: #a1a1aa;
-            --color-border: #3a3a3a;
             --color-primary: #58a6ff;
         }
-        
-        body {
-            background: var(--color-bg-primary);
-            color: var(--color-text-primary);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        code, pre, .hljs {
-            font-family: 'Fira Code', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace !important;
-        }
-        
-        .loading-screen {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--color-bg-primary);
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1200;
-        }
-        
-        .loading-screen.hidden {
-            display: none;
-        }
-        
-        .spinner {
-            width: 60px;
-            height: 60px;
-            animation: rotate 2s linear infinite;
-        }
-        
-        .spinner .path {
-            stroke: var(--color-primary);
-            stroke-linecap: round;
-            animation: dash 1.5s ease-in-out infinite;
-        }
-        
-        @keyframes rotate {
-            100% { transform: rotate(360deg); }
-        }
-        
-        @keyframes dash {
-            0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
-            50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
-            100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
-        }
+        body { background: var(--color-bg-primary); color: var(--color-text-primary); font-family: 'Inter', sans-serif; }
+        code, pre, .hljs { font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace !important; }
+        .loading-screen { display: flex; align-items: center; justify-content: center; background: var(--color-bg-primary); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1200; }
+        .loading-screen.hidden { display: none; }
+        .spinner { width: 60px; height: 60px; animation: rotate 2s linear infinite; }
+        .spinner .path { stroke: var(--color-primary); stroke-linecap: round; animation: dash 1.5s ease-in-out infinite; }
+        @keyframes rotate { 100% { transform: rotate(360deg); } }
+        @keyframes dash { 0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; } 50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; } 100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; } }
     </style>
 </head>
 <body data-theme="dark">
     <div class="app-container">
-        <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <button class="new-chat-btn" id="newChatBtn">
-                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2v12M2 12h12M22 12h-12M12 22V12"/>
-                    </svg>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v12M2 12h12M22 12h-12M12 22V12"/></svg>
                     <span>Nouveau chat</span>
                 </button>
             </div>
-            
             <div class="sidebar-search">
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"/>
-                    <path d="M21 21l-4.35-4.35"/>
-                </svg>
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                 <input type="text" id="searchInput" placeholder="Rechercher...">
-                <button class="clear-search-btn" id="clearSearchBtn">
-                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 6L6 18M6 6l12 12"/>
-                    </svg>
-                </button>
+                <button class="clear-search-btn" id="clearSearchBtn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
             </div>
-            
             <div class="chat-history" id="chatHistory"></div>
-            
             <div class="sidebar-footer">
                 <div class="user-info">
-                    <div class="user-avatar">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                    </div>
-                    <div class="user-details">
-                        <div class="user-name">Test - Développeur</div>
-                        <div class="user-status">Mode codage</div>
-                    </div>
+                    <div class="user-avatar"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                    <div class="user-details"><div class="user-name">Test - DeepSeek</div><div class="user-status">GitHub AI</div></div>
                 </div>
-                <button class="settings-btn" id="settingsBtn" aria-label="Paramètres">
-                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="3"/>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                    </svg>
-                </button>
+                <button class="settings-btn" id="settingsBtn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
             </div>
         </aside>
         
-        <!-- Mobile Menu Button -->
-        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Menu">
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 12h18M3 6h18M3 18h18"/>
-            </svg>
-        </button>
+        <button class="mobile-menu-btn" id="mobileMenuBtn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
         
-        <!-- Main Chat Area -->
         <main class="main-chat" id="mainChat">
             <div class="chat-container">
-                <!-- Chat Header -->
                 <header class="chat-header">
                     <div class="chat-title">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                        </svg>
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                         <input type="text" class="chat-title-input" id="chatTitleInput" placeholder="Nouveau chat" readonly>
                     </div>
                     <div class="chat-actions">
-                        <button class="chat-action-btn copy-chat-btn" id="copyChatBtn" aria-label="Copier">
-                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M16 1c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2H4zm12 0h-8v2h8V1z"/>
-                            </svg>
-                        </button>
-                        <button class="chat-action-btn share-chat-btn" id="shareChatBtn" aria-label="Partager">
-                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="18" cy="5" r="3"/>
-                                <circle cx="6" cy="12" r="3"/>
-                                <circle cx="18" cy="19" r="3"/>
-                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                            </svg>
-                        </button>
-                        <button class="chat-action-btn delete-chat-btn" id="deleteChatBtn" aria-label="Supprimer">
-                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                            </svg>
-                        </button>
+                        <button class="chat-action-btn copy-chat-btn" id="copyChatBtn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 1c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2H4zm12 0h-8v2h8V1z"/></svg></button>
+                        <button class="chat-action-btn share-chat-btn" id="shareChatBtn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/></svg></button>
+                        <button class="chat-action-btn delete-chat-btn" id="deleteChatBtn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                     </div>
                 </header>
                 
-                <!-- Messages Area -->
                 <div class="messages" id="messages">
-                    <!-- Welcome Message -->
                     <div class="welcome-message" id="welcomeMessage">
-                        <div class="welcome-logo">
-                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                            </svg>
-                        </div>
-                        <h1>Page de Test - Chatbot pour Développeurs</h1>
-                        <p>Cette page teste l'interface optimisée pour le codage. Ouvre <a href="index.html" style="color: var(--color-primary);">index.html</a> pour la version complète.</p>
-                        <div class="quick-prompts">
-                            <button class="quick-prompt" data-prompt="Explique-moi ce code JavaScript: function factorial(n) { return n <= 1 ? 1 : n * factorial(n - 1); }">
-                                <span>Tester le code</span>
-                            </button>
-                            <button class="quick-prompt" data-prompt="Génère un exemple de classe en JavaScript">
-                                <span>Générer du code</span>
-                            </button>
-                        </div>
+                        <div class="welcome-logo"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+                        <h1>Page de Test - GitHub DeepSeek</h1>
+                        <p>Teste l'interface avec <a href="index.html" style="color: var(--color-primary)">index.html</a> pour la version complète.</p>
                     </div>
                 </div>
                 
-                <!-- Input Area -->
                 <div class="input-area">
                     <div class="input-container">
-                        <textarea 
-                            id="messageInput" 
-                            placeholder="Teste l'interface ici..."
-                            rows="1"
-                        ></textarea>
-                        <button class="stop-btn" id="stopBtn" style="display: none;" aria-label="Arrêter">
-                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="6" y="6" width="12" height="12" rx="2"/>
-                            </svg>
-                        </button>
-                        <button class="send-btn" id="sendBtn" aria-label="Envoyer">
-                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-                            </svg>
-                        </button>
+                        <textarea id="messageInput" placeholder="Teste ici..." rows="1"></textarea>
+                        <button class="stop-btn" id="stopBtn" style="display: none;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
+                        <button class="send-btn" id="sendBtn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
                     </div>
                     <div class="input-info">
-                        <span id="modelInfo">Modèle: mistral-tiny</span>
+                        <span id="modelInfo">Modèle: deepseek/DeepSeek-V3</span>
                         <span id="tokenCount">0 / 32000 jetons</span>
                     </div>
                 </div>
@@ -220,53 +95,46 @@
         <div class="modal">
             <div class="modal-header">
                 <h2>Paramètres</h2>
-                <button class="close-btn" id="closeSettingsBtn" aria-label="Fermer">
-                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 6L6 18M6 6l12 12"/>
-                    </svg>
-                </button>
+                <button class="close-btn" id="closeSettingsBtn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
             </div>
             <div class="modal-body">
                 <div class="settings-section">
-                    <h3>Paramètres API</h3>
+                    <h3>API GitHub DeepSeek</h3>
                     <div class="form-group">
                         <label for="apiProvider">Fournisseur</label>
                         <select id="apiProvider">
-                            <option value="mistral" selected>Mistral AI</option>
+                            <option value="github" selected>GitHub AI</option>
+                            <option value="mistral">Mistral AI</option>
                             <option value="openai">OpenAI</option>
-                            <option value="groq">Groq</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="apiUrl">URL de l'API</label>
-                        <input type="text" id="apiUrl" placeholder="https://api.mistral.ai/v1/chat/completions" value="https://api.mistral.ai/v1/chat/completions">
+                        <input type="text" id="apiUrl" value="https://models.github.ai/inference">
                     </div>
                     <div class="form-group password-input">
-                        <label for="apiKey">Clé API</label>
-                        <input type="password" id="apiKey" placeholder="Votre clé API">
-                        <button class="toggle-password" id="togglePassword" aria-label="Montrer/Cacher">
-                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                            </svg>
-                        </button>
+                        <label for="apiKey">Clé API GitHub</label>
+                        <input type="password" id="apiKey" placeholder="Ta clé GitHub">
+                        <button class="toggle-password" id="togglePassword"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
                     </div>
                     <div class="form-group">
                         <label for="apiModel">Modèle</label>
                         <select id="apiModel">
-                            <option value="mistral-tiny" selected>mistral-tiny</option>
+                            <option value="deepseek/DeepSeek-V3" selected>deepseek/DeepSeek-V3</option>
+                            <option value="deepseek/DeepSeek-V2">deepseek/DeepSeek-V2</option>
+                            <option value="deepseek/DeepSeek-Coder-V2">deepseek/DeepSeek-Coder-V2</option>
                         </select>
                     </div>
                 </div>
                 
                 <div class="settings-section">
-                    <h3>Paramètres de l'IA</h3>
+                    <h3>Paramètres IA</h3>
                     <div class="form-group">
                         <label for="temperature">Température: <span id="temperatureValue">0.7</span></label>
                         <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7">
                     </div>
                     <div class="form-group">
-                        <label for="maxTokens">Jetons maximum</label>
+                        <label for="maxTokens">Jetons max</label>
                         <input type="number" id="maxTokens" value="32000" min="1">
                     </div>
                 </div>
@@ -289,14 +157,14 @@
                         <label class="checkbox-label">
                             <input type="checkbox" id="enableStreaming" checked>
                             <span class="checkmark"></span>
-                            <span>Activer le streaming</span>
+                            <span>Streaming</span>
                         </label>
                     </div>
                     <div class="checkbox-group">
                         <label class="checkbox-label">
                             <input type="checkbox" id="saveHistory" checked>
                             <span class="checkmark"></span>
-                            <span>Sauvegarder l'historique</span>
+                            <span>Sauvegarder historique</span>
                         </label>
                     </div>
                 </div>
@@ -313,31 +181,12 @@
         <div class="modal">
             <div class="modal-header">
                 <h2>Partager</h2>
-                <button class="close-btn" id="closeShareBtn" aria-label="Fermer">
-                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 6L6 18M6 6l12 12"/>
-                    </svg>
-                </button>
+                <button class="close-btn" id="closeShareBtn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
             </div>
             <div class="modal-body">
                 <div class="share-options">
-                    <button class="share-option" id="copyLinkBtn">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                        </svg>
-                        <span>Copier le lien</span>
-                    </button>
-                    <button class="share-option" id="exportJsonBtn">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14,2 14,8 20,8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                            <polyline points="10,9 9,9 8,9"/>
-                        </svg>
-                        <span>Exporter en JSON</span>
-                    </button>
+                    <button class="share-option" id="copyLinkBtn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span>Copier lien</span></button>
+                    <button class="share-option" id="exportJsonBtn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg><span>Exporter JSON</span></button>
                 </div>
             </div>
         </div>
@@ -345,55 +194,27 @@
     
     <!-- Loading Screen -->
     <div class="loading-screen" id="loadingScreen">
-        <svg class="loading-logo spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path class="path" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
-        </svg>
+        <svg class="loading-logo spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path class="path" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
     </div>
     
-    <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
     
-    <!-- Load highlight.js BEFORE the module script -->
+    <!-- Load highlight.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.configure({ tabReplace: '    ', useBR: false, languages: ['javascript', 'python', 'html', 'css', 'bash', 'json'] });</script>
     
-    <!-- Register languages for highlight.js -->
-    <script>
-        // Configure highlight.js immediately
-        hljs.configure({
-            tabReplace: '    ',
-            useBR: false,
-            languages: ['javascript', 'python', 'html', 'css', 'bash', 'json']
-        });
-    </script>
-    
-    <!-- Main app script (ES Module) -->
+    <!-- Main app -->
     <script type="module">
-        // Wait for DOM to be fully loaded
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                // Import and initialize the app
                 const { ChatApp } = await import('./scripts/classes/ChatApp.js');
                 window.chatApp = new ChatApp();
-                
-                // Hide loading screen after app is ready
                 const loadingScreen = document.getElementById('loadingScreen');
-                if (loadingScreen) {
-                    setTimeout(() => {
-                        loadingScreen.classList.add('hidden');
-                    }, 500);
-                }
+                if (loadingScreen) setTimeout(() => loadingScreen.classList.add('hidden'), 500);
             } catch (error) {
-                console.error('Error loading app:', error);
+                console.error('Error:', error);
                 const loadingScreen = document.getElementById('loadingScreen');
-                if (loadingScreen) {
-                    loadingScreen.innerHTML = `
-                        <div style="text-align: center; color: #ef4444; padding: 20px;">
-                            <h2>Erreur de chargement</h2>
-                            <p>${error.message}</p>
-                            <p>Veuillez rafraîchir la page ou vérifier la console (F12).</p>
-                        </div>
-                    `;
-                }
+                if (loadingScreen) loadingScreen.innerHTML = `<div style="text-align:center;color:#ef4444;padding:20px"><h2>Erreur</h2><p>${error.message}</p></div>`;
             }
         });
     </script>
