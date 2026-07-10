@@ -1,6 +1,7 @@
 /**
  * API Client Class
  * Handles all API communications for the Claude AI Chatbot Clone
+ * Adapted for GitHub DeepSeek API and other providers
  */
 
 import { getConfig, updateConfig } from '../config.js';
@@ -36,28 +37,104 @@ export class APIClient {
      * @returns {boolean} Is configured
      */
     isConfigured() {
-        return !!(this.config.api.url && this.config.api.key);
+        // For GitHub, key might not be required if using authenticated session
+        // But we still need URL
+        return !!(this.config.api.url);
     }
     
     /**
-     * Get API headers
+     * Get API headers based on provider
      * @returns {Object} Headers object
      */
     getHeaders() {
-        return {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.config.api.key}`
+        const headers = {
+            'Content-Type': 'application/json'
         };
+        
+        // Add authorization header if key exists
+        if (this.config.api.key) {
+            headers['Authorization'] = `Bearer ${this.config.api.key}`;
+        }
+        
+        // GitHub specific headers
+        if (this.config.api.provider === 'github' || this.config.api.url.includes('github.ai')) {
+            headers['Accept'] = 'application/json';
+            // GitHub might use different auth scheme
+            if (this.config.api.key) {
+                headers['Authorization'] = `token ${this.config.api.key}`;
+            }
+        }
+        
+        return headers;
     }
     
     /**
-     * Build request body for chat completion
+     * Build request body for chat completion based on provider
      * @param {Array} messages - Array of message objects
      * @returns {Object} Request body
      */
     buildRequestBody(messages) {
+        const provider = this.config.api.provider || this.detectProviderFromUrl();
+        
+        // GitHub DeepSeek format
+        if (provider === 'github' || this.config.api.url.includes('github.ai')) {
+            return {
+                model: this.config.api.model || 'deepseek/DeepSeek-V3',
+                messages: messages.map(msg => ({
+                    role: msg.role,
+                    content: msg.content
+                })),
+                temperature: this.config.settings.temperature,
+                max_tokens: this.config.settings.maxTokens,
+                stream: this.config.settings.enableStreaming
+            };
+        }
+        
+        // Mistral format
+        if (provider === 'mistral') {
+            return {
+                model: this.config.api.model || 'mistral-tiny',
+                messages: messages.map(msg => ({
+                    role: msg.role,
+                    content: msg.content
+                })),
+                temperature: this.config.settings.temperature,
+                max_tokens: this.config.settings.maxTokens,
+                stream: this.config.settings.enableStreaming
+            };
+        }
+        
+        // OpenAI format
+        if (provider === 'openai') {
+            return {
+                model: this.config.api.model || 'gpt-3.5-turbo',
+                messages: messages.map(msg => ({
+                    role: msg.role,
+                    content: msg.content
+                })),
+                temperature: this.config.settings.temperature,
+                max_tokens: this.config.settings.maxTokens,
+                stream: this.config.settings.enableStreaming
+            };
+        }
+        
+        // Groq format
+        if (provider === 'groq') {
+            return {
+                model: this.config.api.model || 'llama3-8b-instant',
+                messages: messages.map(msg => ({
+                    role: msg.role,
+                    content: msg.content
+                })),
+                temperature: this.config.settings.temperature,
+                max_tokens: this.config.settings.maxTokens,
+                stream: this.config.settings.enableStreaming
+            };
+        }
+        
+        // Default format (GitHub-like)
         return {
-            model: this.config.api.model,
+            model: this.config.api.model || 'deepseek/DeepSeek-V3',
             messages: messages.map(msg => ({
                 role: msg.role,
                 content: msg.content
@@ -69,6 +146,27 @@ export class APIClient {
     }
     
     /**
+     * Detect provider from URL
+     * @returns {string} Provider name
+     */
+    detectProviderFromUrl() {
+        const url = this.config.api.url || '';
+        if (url.includes('github.ai') || url.includes('github.com')) {
+            return 'github';
+        }
+        if (url.includes('mistral.ai')) {
+            return 'mistral';
+        }
+        if (url.includes('openai.com')) {
+            return 'openai';
+        }
+        if (url.includes('groq.com')) {
+            return 'groq';
+        }
+        return 'github'; // Default to GitHub DeepSeek
+    }
+    
+    /**
      * Send chat completion request
      * @param {Array} messages - Array of message objects
      * @param {Function} onSuccess - Success callback
@@ -77,7 +175,7 @@ export class APIClient {
      */
     async sendChatCompletion(messages, onSuccess, onError, onStream = null) {
         if (!this.isConfigured()) {
-            onError(new Error('Veuillez configurer l\'URL et la clé API dans les paramètres.'));
+            onError(new Error('Veuillez configurer l\'URL de l\'API dans les paramètres.'));
             return;
         }
         
@@ -91,6 +189,7 @@ export class APIClient {
         
         try {
             const requestBody = this.buildRequestBody(messages);
+            const provider = this.config.api.provider || this.detectProviderFromUrl();
             
             const response = await fetch(this.config.api.url, {
                 method: 'POST',
@@ -101,17 +200,17 @@ export class APIClient {
             
             if (!response.ok) {
                 const errorData = await this.parseErrorResponse(response);
-                onError(new Error(errorData.message || `Erreur API: ${response.status}`));
+                onError(new Error(errorData.message || `Erreur API: ${response.status} ${response.statusText}`));
                 return;
             }
             
             // Handle streaming response
             if (requestBody.stream && onStream) {
-                await this.handleStreamingResponse(response, onStream, onError);
+                await this.handleStreamingResponse(response, onStream, onError, provider);
             } else {
                 // Handle regular response
                 const data = await response.json();
-                const aiResponse = this.extractResponse(data);
+                const aiResponse = this.extractResponse(data, provider);
                 onSuccess(aiResponse);
             }
         } catch (error) {
@@ -128,8 +227,9 @@ export class APIClient {
      * @param {Response} response - Fetch response
      * @param {Function} onStream - Stream callback
      * @param {Function} onError - Error callback
+     * @param {string} provider - API provider
      */
-    async handleStreamingResponse(response, onStream, onError) {
+    async handleStreamingResponse(response, onStream, onError, provider = 'github') {
         this.isStreaming = true;
         
         try {
@@ -157,7 +257,7 @@ export class APIClient {
                         
                         try {
                             const data = JSON.parse(dataStr);
-                            const delta = this.extractDelta(data);
+                            const delta = this.extractDelta(data, provider);
                             if (delta) {
                                 onStream(delta, false);
                             }
@@ -194,24 +294,50 @@ export class APIClient {
         try {
             return await response.json();
         } catch (e) {
-            return {
-                message: `Erreur ${response.status}: ${response.statusText}`
-            };
+            try {
+                const text = await response.text();
+                return {
+                    message: `Erreur ${response.status}: ${response.statusText}${text ? ' - ' + text : ''}`
+                };
+            } catch (e2) {
+                return {
+                    message: `Erreur ${response.status}: ${response.statusText}`
+                };
+            }
         }
     }
     
     /**
-     * Extract response from API data
+     * Extract response from API data based on provider
      * @param {Object} data - API response data
+     * @param {string} provider - API provider
      * @returns {string} Extracted response
      */
-    extractResponse(data) {
-        // Mistral/OpenAI format
-        if (data.choices && data.choices[0] && data.choices[0].message) {
-            return data.choices[0].message.content || '';
+    extractResponse(data, provider = 'github') {
+        // GitHub DeepSeek format
+        if (provider === 'github' || this.config.api.url.includes('github.ai')) {
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+                return data.choices[0].message.content || '';
+            }
+            if (data.message && data.message.content) {
+                return data.message.content;
+            }
+            if (data.output) {
+                return data.output;
+            }
+            if (data.result) {
+                return data.result;
+            }
         }
         
-        // Other formats
+        // Mistral/OpenAI format
+        if (provider === 'mistral' || provider === 'openai' || provider === 'groq') {
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+                return data.choices[0].message.content || '';
+            }
+        }
+        
+        // Generic fallback
         if (data.outputs && data.outputs[0]) {
             return data.outputs[0].text || '';
         }
@@ -224,21 +350,42 @@ export class APIClient {
             return data.result;
         }
         
+        // Try to find any string content
+        if (typeof data === 'string') {
+            return data;
+        }
+        
         return '';
     }
     
     /**
-     * Extract delta from streaming data
+     * Extract delta from streaming data based on provider
      * @param {Object} data - Streaming data
+     * @param {string} provider - API provider
      * @returns {string|null} Delta content or null
      */
-    extractDelta(data) {
-        // Mistral/OpenAI streaming format
-        if (data.choices && data.choices[0] && data.choices[0].delta) {
-            return data.choices[0].delta.content || null;
+    extractDelta(data, provider = 'github') {
+        // GitHub DeepSeek streaming format
+        if (provider === 'github' || this.config.api.url.includes('github.ai')) {
+            if (data.choices && data.choices[0] && data.choices[0].delta) {
+                return data.choices[0].delta.content || null;
+            }
+            if (data.message && data.message.content) {
+                return data.message.content;
+            }
+            if (data.output) {
+                return data.output;
+            }
         }
         
-        // Other streaming formats
+        // Mistral/OpenAI streaming format
+        if (provider === 'mistral' || provider === 'openai' || provider === 'groq') {
+            if (data.choices && data.choices[0] && data.choices[0].delta) {
+                return data.choices[0].delta.content || null;
+            }
+        }
+        
+        // Generic fallback
         if (data.output) {
             return data.output;
         }
@@ -277,9 +424,7 @@ export class APIClient {
      * @returns {boolean} Is available
      */
     isModelAvailable(model) {
-        // This would typically check against the API provider's available models
-        // For now, we'll just return true for all models
-        return true;
+        return true; // Assume all models are available
     }
     
     /**
@@ -287,13 +432,35 @@ export class APIClient {
      * @returns {Array} Array of available models
      */
     getAvailableModels() {
-        const provider = this.config.api.provider || 'mistral';
+        const provider = this.config.api.provider || this.detectProviderFromUrl();
+        
         const models = {
+            github: [
+                'deepseek/DeepSeek-V3',
+                'deepseek/DeepSeek-V2',
+                'deepseek/DeepSeek-Coder-V2',
+                'deepseek/DeepSeek-Coder-V1.5',
+                'openai/gpt-4o',
+                'openai/gpt-4-turbo',
+                'openai/gpt-4',
+                'openai/gpt-3.5-turbo',
+                'anthropic/claude-3-haiku',
+                'anthropic/claude-3-sonnet',
+                'anthropic/claude-3-opus',
+                'meta/llama-3.1-70b',
+                'meta/llama-3.1-8b',
+                'meta/llama-3-70b',
+                'meta/llama-3-8b',
+                'mistral/mistral-large',
+                'mistral/mistral-small',
+                'mistral/mixtral-8x7b'
+            ],
             mistral: ['mistral-tiny', 'mistral-small', 'mistral-medium', 'mistral-large'],
             openai: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o'],
             groq: ['llama3-8b-instant', 'llama3-70b-versatile', 'mixtral-8x7b-32768', 'gemma-7b-it']
         };
-        return models[provider] || models.mistral;
+        
+        return models[provider] || models.github;
     }
     
     /**
@@ -320,6 +487,7 @@ export class APIClient {
             
             return response.ok;
         } catch (e) {
+            console.error('Connection test failed:', e);
             return false;
         }
     }
