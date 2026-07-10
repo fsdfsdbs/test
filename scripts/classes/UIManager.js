@@ -1,8 +1,7 @@
 /**
  * UI Manager Class
  * Manages all UI operations for the Claude AI Chatbot Clone
- * Enhanced for coding: code preview, syntax highlighting, action buttons
- * Adapted for GitHub DeepSeek API
+ * Enhanced for Local AI with training and knowledge management
  */
 
 import {
@@ -102,6 +101,12 @@ export class UIManager {
             enterToSend: getElementById('enterToSend'),
             togglePassword: getElementById('togglePassword'),
             
+            // Local AI Buttons (new)
+            trainAIBtn: getElementById('trainAIBtn'),
+            clearAIBtn: getElementById('clearAIBtn'),
+            exportAIBtn: getElementById('exportAIBtn'),
+            importAIBtn: getElementById('importAIBtn'),
+            
             // Share Options
             copyLinkBtn: getElementById('copyLinkBtn'),
             exportJsonBtn: getElementById('exportJsonBtn'),
@@ -121,9 +126,68 @@ export class UIManager {
         this.setupFontSize();
         this.injectCodeStyles();
         this.injectCodePreviewModal();
+        this.injectLocalAIControls();
         
         // Hide loading screen after UI is ready
         setTimeout(() => this.hideLoading(), 500);
+    }
+    
+    /**
+     * Inject Local AI controls into the UI
+     */
+    injectLocalAIControls() {
+        // Check if controls already exist
+        if (this.elements.trainAIBtn) return;
+        
+        // Create Local AI controls container
+        const aiControls = createElement('div', {
+            className: 'local-ai-controls'
+        });
+        
+        aiControls.innerHTML = `
+            <div class="ai-controls-group">
+                <button class="ai-control-btn" id="trainAIBtn" title="Entraîner l'IA avec les conversations actuelles">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                    <span>Entraîner l'IA</span>
+                </button>
+                <button class="ai-control-btn" id="clearAIBtn" title="Effacer la mémoire de l'IA">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    <span>Effacer mémoire</span>
+                </button>
+                <button class="ai-control-btn" id="exportAIBtn" title="Exporter les connaissances de l'IA">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    <span>Exporter IA</span>
+                </button>
+                <button class="ai-control-btn" id="importAIBtn" title="Importer des connaissances pour l'IA">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <span>Importer IA</span>
+                </button>
+            </div>
+        `;
+        
+        // Insert controls before the input area
+        const inputArea = querySelector('.input-area');
+        if (inputArea) {
+            inputArea.parentNode.insertBefore(aiControls, inputArea);
+        }
+        
+        // Update element references
+        this.elements.trainAIBtn = getElementById('trainAIBtn');
+        this.elements.clearAIBtn = getElementById('clearAIBtn');
+        this.elements.exportAIBtn = getElementById('exportAIBtn');
+        this.elements.importAIBtn = getElementById('importAIBtn');
     }
     
     /**
@@ -199,7 +263,6 @@ export class UIManager {
             const languages = ['javascript', 'python', 'html', 'css', 'bash', 'json', 'typescript', 'java', 'c', 'cpp', 'php', 'ruby', 'go', 'rust', 'swift', 'kotlin'];
             languages.forEach(lang => {
                 try {
-                    // Use dynamic import for ES modules
                     import(`https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/es/languages/${lang}.min.js`)
                         .then(module => {
                             if (module && module.default) {
@@ -207,7 +270,6 @@ export class UIManager {
                             }
                         })
                         .catch(() => {
-                            // Fallback: language might already be registered
                             console.warn(`Could not load syntax highlighting for ${lang}`);
                         });
                 } catch (e) {
@@ -260,8 +322,8 @@ export class UIManager {
         modal.innerHTML = `
             <div class="modal code-preview-modal">
                 <div class="modal-header">
-                    <h2>Preview Code</h2>
-                    <button class="close-btn close-code-preview-btn" aria-label="Close">
+                    <h2>Prévisualiser le code</h2>
+                    <button class="close-btn close-code-preview-btn" aria-label="Fermer">
                         ${createIcon('M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z', { width: '18', height: '18' })}
                     </button>
                 </div>
@@ -465,7 +527,7 @@ export class UIManager {
         // Preview button
         const previewBtn = createElement('button', {
             className: 'code-block-action-btn preview-code-btn',
-            title: 'Preview',
+            title: 'Prévisualiser',
             innerHTML: createIcon('M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z', { width: '14', height: '14' })
         });
         
@@ -569,6 +631,12 @@ export class UIManager {
         if (this.elements.shareChatBtn) addEventListener(this.elements.shareChatBtn, 'click', () => this.openShareModal());
         if (this.elements.deleteChatBtn) addEventListener(this.elements.deleteChatBtn, 'click', () => this.emit('deleteChat'));
         if (this.elements.closeChatBtn) addEventListener(this.elements.closeChatBtn, 'click', () => this.emit('closeChat'));
+        
+        // Local AI Controls
+        if (this.elements.trainAIBtn) addEventListener(this.elements.trainAIBtn, 'click', () => this.emit('trainAI'));
+        if (this.elements.clearAIBtn) addEventListener(this.elements.clearAIBtn, 'click', () => this.emit('clearAIKnowledge'));
+        if (this.elements.exportAIBtn) addEventListener(this.elements.exportAIBtn, 'click', () => this.emit('exportAIKnowledge'));
+        if (this.elements.importAIBtn) addEventListener(this.elements.importAIBtn, 'click', () => this.emit('importAIKnowledge'));
         
         // Settings Modal
         if (this.elements.closeSettingsBtn) addEventListener(this.elements.closeSettingsBtn, 'click', () => this.closeSettings());
@@ -904,22 +972,32 @@ export class UIManager {
     
     /**
      * Load settings form with current values
+     * Modified for Local AI
      */
     loadSettingsForm() {
         const config = JSON.parse(localStorage.getItem('chatbotConfig') || '{}');
         
-        // API Settings - Default to GitHub DeepSeek
+        // For Local AI, we use default values
         if (this.elements.apiProvider) {
-            this.elements.apiProvider.value = config.api?.provider || 'github';
+            this.elements.apiProvider.value = config.api?.provider || 'local';
         }
         if (this.elements.apiUrl) {
-            this.elements.apiUrl.value = config.api?.url || 'https://models.github.ai/inference';
+            this.elements.apiUrl.value = config.api?.url || 'IA Locale (100% local)';
+            this.elements.apiUrl.disabled = true;
+            this.elements.apiUrl.style.color = '#666';
+            this.elements.apiUrl.style.cursor = 'not-allowed';
         }
         if (this.elements.apiKey) {
-            this.elements.apiKey.value = config.api?.key || '';
+            this.elements.apiKey.value = config.api?.key || 'Aucune clé nécessaire (local)';
+            this.elements.apiKey.disabled = true;
+            this.elements.apiKey.style.color = '#666';
+            this.elements.apiKey.style.cursor = 'not-allowed';
         }
         if (this.elements.apiModel) {
-            this.elements.apiModel.value = config.api?.model || 'deepseek/DeepSeek-V3';
+            this.elements.apiModel.value = config.api?.model || 'IA Locale v1.0';
+            this.elements.apiModel.disabled = true;
+            this.elements.apiModel.style.color = '#666';
+            this.elements.apiModel.style.cursor = 'not-allowed';
         }
         
         // UI Settings
@@ -948,21 +1026,52 @@ export class UIManager {
             }
         }
         
-        if (this.elements.apiProvider) {
-            this.handleProviderChange({ target: this.elements.apiProvider });
-        }
+        // Add Local AI info to the settings modal
+        this.injectLocalAISettingsInfo();
     }
     
     /**
-     * Save settings from form
+     * Inject Local AI info into settings modal
+     */
+    injectLocalAISettingsInfo() {
+        const settingsBody = querySelector('.modal-body', this.elements.settingsModal);
+        if (!settingsBody) return;
+        
+        // Check if info already exists
+        if (querySelector('.local-ai-info', settingsBody)) return;
+        
+        const infoDiv = createElement('div', {
+            className: 'local-ai-info',
+            style: 'margin-top: 20px; padding: 15px; background: rgba(88, 166, 255, 0.1); border-radius: 8px; border-left: 4px solid #58a6ff;'
+        });
+        
+        infoDiv.innerHTML = `
+            <h4 style="margin-top: 0; color: #58a6ff;">✨ IA Locale Activée</h4>
+            <p style="margin-bottom: 10px;"><strong>Vos données restent 100% locales !</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Toutes les conversations sont stockées dans votre navigateur</li>
+                <li>L'IA apprend de vos échanges pour s'améliorer</li>
+                <li>Aucune donnée n'est envoyée à des serveurs externes</li>
+                <li>Vous pouvez entraîner, exporter et importer les connaissances</li>
+            </ul>
+            <p style="margin-bottom: 0; font-size: 14px; color: #666;">
+                Utilisez les boutons en bas de l'interface pour gérer l'IA.
+            </p>
+        `;
+        
+        settingsBody.appendChild(infoDiv);
+    }
+    
+    /**
+     * Save settings
      */
     saveSettings() {
         const config = {
             api: {
-                provider: this.elements.apiProvider?.value || 'github',
-                url: this.elements.apiUrl?.value.trim() || 'https://models.github.ai/inference',
-                key: this.elements.apiKey?.value.trim() || '',
-                model: this.elements.apiModel?.value || 'deepseek/DeepSeek-V3'
+                provider: this.elements.apiProvider?.value || 'local',
+                url: this.elements.apiUrl?.value || 'IA Locale',
+                key: this.elements.apiKey?.value || '',
+                model: this.elements.apiModel?.value || 'IA Locale v1.0'
             },
             settings: {
                 temperature: parseFloat(this.elements.temperature?.value) || 0.7,
@@ -981,9 +1090,6 @@ export class UIManager {
         this.applyTheme(config.settings.theme);
         this.applyFontSize(config.settings.fontSize);
         
-        // Update model info display
-        this.updateModelInfo(config.api.model);
-        
         this.closeSettings();
         this.emit('settingsSaved', config);
         showToast('Paramètres enregistrés', 'success');
@@ -997,71 +1103,38 @@ export class UIManager {
         if (!this.elements.apiProvider || !this.elements.apiUrl) return;
         
         const provider = e.target.value;
-        const providers = {
-            github: 'https://models.github.ai/inference',
-            mistral: 'https://api.mistral.ai/v1/chat/completions',
-            openai: 'https://api.openai.com/v1/chat/completions',
-            groq: 'https://api.groq.com/v1/chat/completions'
-        };
         
-        this.elements.apiUrl.value = providers[provider] || '';
-        
-        // Update model options based on provider
-        const models = {
-            github: [
-                'deepseek/DeepSeek-V3',
-                'deepseek/DeepSeek-V2', 
-                'deepseek/DeepSeek-Coder-V2',
-                'deepseek/DeepSeek-Coder-V1.5',
-                'openai/gpt-4o',
-                'openai/gpt-4-turbo',
-                'openai/gpt-4',
-                'openai/gpt-3.5-turbo',
-                'anthropic/claude-3-haiku',
-                'anthropic/claude-3-sonnet',
-                'anthropic/claude-3-opus',
-                'meta/llama-3.1-70b',
-                'meta/llama-3.1-8b',
-                'meta/llama-3-70b',
-                'meta/llama-3-8b',
-                'mistral/mistral-large',
-                'mistral/mistral-small',
-                'mistral/mixtral-8x7b'
-            ],
-            mistral: ['mistral-tiny', 'mistral-small', 'mistral-medium', 'mistral-large'],
-            openai: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o'],
-            groq: ['llama3-8b-instant', 'llama3-70b-versatile', 'mixtral-8x7b-32768', 'gemma-7b-it']
-        };
-        
-        this.updateModelOptions(models[provider] || models.github);
-    }
-    
-    /**
-     * Update model select options
-     * @param {Array} models - Array of model names
-     */
-    updateModelOptions(models) {
-        if (!this.elements.apiModel) return;
-        
-        const modelSelect = this.elements.apiModel;
-        const currentValue = modelSelect.value;
-        
-        emptyElement(modelSelect);
-        
-        models.forEach(model => {
-            const option = createElement('option', {
-                value: model,
-                textContent: model
-            });
-            modelSelect.appendChild(option);
-        });
-        
-        // Restore previous selection if available
-        if (models.includes(currentValue)) {
-            modelSelect.value = currentValue;
-        } else if (models.length > 0) {
-            // Select first model if current not available
-            modelSelect.value = models[0];
+        // For Local AI, disable URL and key fields
+        if (provider === 'local' || provider === 'IA Locale') {
+            if (this.elements.apiUrl) {
+                this.elements.apiUrl.value = 'IA Locale (100% local)';
+                this.elements.apiUrl.disabled = true;
+                this.elements.apiUrl.style.color = '#666';
+            }
+            if (this.elements.apiKey) {
+                this.elements.apiKey.value = 'Aucune clé nécessaire';
+                this.elements.apiKey.disabled = true;
+                this.elements.apiKey.style.color = '#666';
+            }
+            if (this.elements.apiModel) {
+                this.elements.apiModel.value = 'IA Locale v1.0';
+                this.elements.apiModel.disabled = true;
+                this.elements.apiModel.style.color = '#666';
+            }
+        } else {
+            // For other providers, enable fields (though we're using LocalAI)
+            if (this.elements.apiUrl) {
+                this.elements.apiUrl.disabled = false;
+                this.elements.apiUrl.style.color = '';
+            }
+            if (this.elements.apiKey) {
+                this.elements.apiKey.disabled = false;
+                this.elements.apiKey.style.color = '';
+            }
+            if (this.elements.apiModel) {
+                this.elements.apiModel.disabled = false;
+                this.elements.apiModel.style.color = '';
+            }
         }
     }
     
@@ -1104,7 +1177,12 @@ export class UIManager {
      */
     updateModelInfo(model) {
         if (this.elements.modelInfo) {
-            this.elements.modelInfo.textContent = `Modèle: ${model}`;
+            // For Local AI, show custom message
+            if (model === 'IA Locale' || model === 'IA Locale v1.0' || model === 'local') {
+                this.elements.modelInfo.textContent = 'Modèle: IA Locale (100% local)';
+            } else {
+                this.elements.modelInfo.textContent = `Modèle: ${model}`;
+            }
         }
     }
     
@@ -1174,8 +1252,44 @@ export class UIManager {
         emptyElement(this.elements.messages);
         
         if (messages.length === 0 && !isLoading && !isTyping) {
-            // Show welcome message
+            // Show welcome message for Local AI
             this.elements.welcomeMessage.style.display = 'flex';
+            this.elements.welcomeMessage.innerHTML = `
+                <div class="welcome-logo">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                </div>
+                <h1>Bienvenue dans votre IA Locale !</h1>
+                <p>Je suis une intelligence artificielle <strong>100% locale</strong> qui fonctionne entièrement dans votre navigateur.</p>
+                <ul style="text-align: left; padding-left: 20px;">
+                    <li>✅ Toutes vos données restent <strong>sur votre appareil</strong></li>
+                    <li>✅ Je peux répondre à vos questions et générer du code</li>
+                    <li>✅ J'apprends de nos conversations pour devenir plus intelligente</li>
+                    <li>✅ Aucune connexion internet requise</li>
+                </ul>
+                <div class="quick-prompts">
+                    <button class="quick-prompt" data-prompt="Explique-moi comment fonctionne une boucle for en JavaScript">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        <span>Expliquer du code</span>
+                    </button>
+                    <button class="quick-prompt" data-prompt="Génère un exemple de fonction JavaScript qui calcule la factorielle">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        <span>Générer du code</span>
+                    </button>
+                    <button class="quick-prompt" data-prompt="Quelles sont les bonnes pratiques en JavaScript moderne ?">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0 1 12 2.944a11.955 11.955 0 0 1-8.618 3.04A12.02 12.02 0 0 0 3 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                        <span>Meilleures pratiques</span>
+                    </button>
+                </div>
+            `;
             return;
         }
         

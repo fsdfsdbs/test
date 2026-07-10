@@ -1,17 +1,18 @@
 /**
- * ChatApp Class
+ * ChatApp Class - Modified for Local AI
  * Main application class for the Claude AI Chatbot Clone
+ * Now uses LocalAI instead of external APIs
  */
 
 import { getConfig, updateConfig, initConfig } from '../config.js';
 import { storageManager } from './StorageManager.js';
-import { apiClient } from './APIClient.js';
+import { localAI } from './LocalAI.js';
 import { uiManager } from './UIManager.js';
 import { formatMessage } from '../utils/markdown.js';
 import { generateId, estimateTokenCount, copyToClipboard, downloadFile } from '../utils/helpers.js';
 
 /**
- * ChatApp - Main application class
+ * ChatApp - Main application class with Local AI
  */
 export class ChatApp {
     constructor() {
@@ -46,6 +47,13 @@ export class ChatApp {
         
         // Hide loading screen
         uiManager.hideLoading();
+        
+        // Show welcome message for Local AI
+        setTimeout(() => {
+            if (this.state.messages.length === 0) {
+                uiManager.showToast('IA Locale activée ! Toutes vos données restent dans votre navigateur.', 'success');
+            }
+        }, 1000);
     }
     
     /**
@@ -58,7 +66,7 @@ export class ChatApp {
         // Send message
         uiManager.on('sendMessage', () => this.sendMessage());
         
-        // Stop stream
+        // Stop stream (kept for compatibility)
         uiManager.on('stopStream', () => this.stopStream());
         
         // Load conversation
@@ -90,6 +98,12 @@ export class ChatApp {
         
         // Export HTML
         uiManager.on('exportHtml', () => this.exportHtml());
+        
+        // Local AI specific events
+        uiManager.on('trainAI', () => this.trainAI());
+        uiManager.on('clearAIKnowledge', () => this.clearAIKnowledge());
+        uiManager.on('exportAIKnowledge', () => this.exportAIKnowledge());
+        uiManager.on('importAIKnowledge', () => this.importAIKnowledge());
         
         // Window events
         window.addEventListener('beforeunload', () => this.handleBeforeUnload());
@@ -159,10 +173,6 @@ export class ChatApp {
         uiManager.updateChatTitle(newConversation.title);
         uiManager.clearInput();
         uiManager.focusInput();
-        
-        // Update config
-        const config = getConfig();
-        uiManager.updateModelInfo(config.api.model);
     }
     
     /**
@@ -243,7 +253,7 @@ export class ChatApp {
         if (!conversation) return;
         
         const text = conversation.messages.map(msg => {
-            const role = msg.role === 'user' ? 'Vous' : 'Claude';
+            const role = msg.role === 'user' ? 'Vous' : 'IA';
             const time = new Date(msg.timestamp).toLocaleTimeString('fr-FR');
             return `[${time}] ${role}: ${msg.content}`;
         }).join('\n\n');
@@ -267,8 +277,8 @@ export class ChatApp {
      */
     handleSettingsSaved(config) {
         updateConfig(config);
-        apiClient.updateConfig();
-        uiManager.updateModelInfo(config.api.model);
+        // No need to update API client since we're using LocalAI
+        uiManager.updateModelInfo(config.api?.model || 'IA Locale');
     }
     
     /**
@@ -316,121 +326,56 @@ export class ChatApp {
         this.state.isLoading = true;
         uiManager.setInputDisabled(true);
         
-        // Call API
-        this.callAPI(text);
+        // Use Local AI to generate response
+        this.generateLocalAIResponse(text);
     }
     
     /**
-     * Call the API
+     * Generate response using Local AI
      * @param {string} userMessage - User message
      */
-    callAPI(userMessage) {
-        const messages = [...this.state.messages];
-        
-        const config = getConfig();
-        const enableStreaming = config.settings.enableStreaming;
-        
-        if (enableStreaming) {
-            this.callAPIStreaming(messages);
-        } else {
-            this.callAPIRegular(messages);
-        }
-    }
-    
-    /**
-     * Call API with regular (non-streaming) response
-     * @param {Array} messages - Messages to send
-     */
-    callAPIRegular(messages) {
-        apiClient.sendChatCompletion(
-            messages,
-            (response) => this.handleAPIResponse(response),
-            (error) => this.handleAPIError(error)
-        );
-    }
-    
-    /**
-     * Call API with streaming response
-     * @param {Array} messages - Messages to send
-     */
-    callAPIStreaming(messages) {
-        this.state.isStreaming = true;
-        this.state.streamBuffer = '';
-        uiManager.showStopButton();
-        
-        apiClient.sendChatCompletion(
-            messages,
-            null,
-            (error) => this.handleAPIError(error),
-            (delta, isDone) => this.handleStreamDelta(delta, isDone)
-        );
-    }
-    
-    /**
-     * Handle API response
-     * @param {string} response - API response
-     */
-    handleAPIResponse(response) {
-        // Create AI message
-        const aiMessage = {
-            id: generateId(),
-            role: 'assistant',
-            content: response,
-            timestamp: new Date().toISOString()
-        };
-        
-        this.state.messages.push(aiMessage);
-        this.state.isTyping = false;
-        this.state.isLoading = false;
-        
-        // Update conversation
-        this.updateCurrentConversation();
-        
-        // Update UI
-        this.renderMessages();
-        uiManager.setInputDisabled(false);
-        uiManager.hideTypingIndicator();
-        uiManager.focusInput();
-    }
-    
-    /**
-     * Handle stream delta
-     * @param {string|null} delta - Delta content
-     * @param {boolean} isDone - Is stream complete
-     */
-    handleStreamDelta(delta, isDone) {
-        if (delta) {
-            this.state.streamBuffer += delta;
+    async generateLocalAIResponse(userMessage) {
+        try {
+            // Get previous messages for context
+            const previousMessages = this.state.messages.slice(-10); // Last 10 messages for context
             
-            // Update the last message (or create if it doesn't exist)
-            if (this.state.messages.length === 0 || 
-                this.state.messages[this.state.messages.length - 1].role !== 'assistant') {
-                const aiMessage = {
-                    id: generateId(),
-                    role: 'assistant',
-                    content: this.state.streamBuffer,
-                    timestamp: new Date().toISOString()
-                };
-                this.state.messages.push(aiMessage);
-            } else {
-                this.state.messages[this.state.messages.length - 1].content = this.state.streamBuffer;
-            }
+            // Generate response using LocalAI
+            const response = await localAI.generateResponse(userMessage, previousMessages);
             
-            this.renderMessages();
-        }
-        
-        if (isDone) {
-            this.stopStream();
+            // Create AI message
+            const aiMessage = {
+                id: generateId(),
+                role: 'assistant',
+                content: response,
+                timestamp: new Date().toISOString()
+            };
+            
+            this.state.messages.push(aiMessage);
+            this.state.isTyping = false;
+            this.state.isLoading = false;
+            
+            // Let LocalAI learn from this conversation
+            localAI.learnFromConversation([...previousMessages, userMessage, aiMessage]);
+            
+            // Update conversation
             this.updateCurrentConversation();
+            
+            // Update UI
+            this.renderMessages();
+            uiManager.setInputDisabled(false);
+            uiManager.hideTypingIndicator();
+            uiManager.focusInput();
+            
+        } catch (error) {
+            this.handleLocalAIError(error);
         }
     }
     
     /**
-     * Stop the current stream
+     * Stop the current stream (kept for compatibility)
      */
     stopStream() {
         if (this.state.isStreaming) {
-            apiClient.cancelRequest();
             this.state.isStreaming = false;
             this.state.isTyping = false;
             this.state.isLoading = false;
@@ -443,10 +388,10 @@ export class ChatApp {
     }
     
     /**
-     * Handle API error
+     * Handle Local AI error
      * @param {Error} error - Error object
      */
-    handleAPIError(error) {
+    handleLocalAIError(error) {
         this.state.isLoading = false;
         this.state.isTyping = false;
         this.state.isStreaming = false;
@@ -456,8 +401,71 @@ export class ChatApp {
         uiManager.hideStopButton();
         uiManager.focusInput();
         
-        uiManager.showError(error.message);
-        console.error('API Error:', error);
+        uiManager.showError('Erreur avec l\'IA locale : ' + error.message);
+        console.error('Local AI Error:', error);
+    }
+    
+    /**
+     * Train the Local AI with current conversations
+     */
+    trainAI() {
+        // Train LocalAI with all conversations
+        this.state.conversations.forEach(conversation => {
+            if (conversation.messages.length >= 2) {
+                localAI.learnFromConversation(conversation.messages);
+            }
+        });
+        
+        uiManager.showToast('IA entraînée avec succès ! Elle est maintenant plus intelligente. 🧠', 'success');
+    }
+    
+    /**
+     * Clear Local AI knowledge
+     */
+    clearAIKnowledge() {
+        localAI.clearKnowledge();
+        uiManager.showToast('Mémoire de l\'IA effacée. Elle repart de zéro. 🗑️', 'success');
+    }
+    
+    /**
+     * Export Local AI knowledge
+     */
+    exportAIKnowledge() {
+        const knowledge = localAI.exportKnowledge();
+        const json = JSON.stringify(knowledge, null, 2);
+        const filename = `ia-locale-knowledge-${new Date().toISOString().split('T')[0]}.json`;
+        
+        downloadFile(json, filename, 'application/json');
+        uiManager.showToast('Connaissances de l\'IA exportées !', 'success');
+    }
+    
+    /**
+     * Import Local AI knowledge
+     */
+    async importAIKnowledge() {
+        // Create file input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const knowledge = JSON.parse(event.target.result);
+                    localAI.importKnowledge(knowledge);
+                    uiManager.showToast('Connaissances importées avec succès ! 📚', 'success');
+                } catch (error) {
+                    uiManager.showToast('Erreur lors de l\'import : ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        };
+        
+        input.click();
     }
     
     /**
@@ -497,7 +505,7 @@ export class ChatApp {
         
         if (!conversation) return;
         
-        // Create a shareable link (this would need backend support for full functionality)
+        // Create a shareable link
         const link = `${window.location.origin}${window.location.pathname}?chat=${conversation.id}`;
         
         copyToClipboard(link).then(() => {
@@ -551,11 +559,14 @@ export class ChatApp {
         .user { background: #e3f2fd; margin-left: 20%; }
         .ai { background: #f5f5f5; margin-right: 20%; }
         .time { font-size: 12px; color: #666; }
+        pre { background: #2d2d2d; color: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        code { font-family: monospace; }
     </style>
 </head>
 <body>
     <h1>${conversation.title}</h1>
     <p>Exporté le ${new Date().toLocaleString('fr-FR')}</p>
+    <p><em>IA Locale - Toutes les données sont stockées localement</em></p>
 `;
         
         conversation.messages.forEach(msg => {
@@ -568,7 +579,7 @@ export class ChatApp {
             
             html += `
     <div class="message ${role}">
-        <strong>${role === 'user' ? 'Vous' : 'Claude'}</strong>
+        <strong>${role === 'user' ? 'Vous' : 'IA Locale'}</strong>
         <span class="time">${time}</span>
         <div>${content}</div>
     </div>
@@ -588,7 +599,6 @@ export class ChatApp {
      * Handle before unload
      */
     handleBeforeUnload() {
-        // Save current conversation if it has unsaved changes
         this.updateCurrentConversation();
     }
 }
