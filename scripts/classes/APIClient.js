@@ -1,6 +1,6 @@
 /**
  * API Client Class
- * Verrouillé sur Z.ai GLM-5.2
+ * Verrouillé sur OpenRouter
  */
 
 import { getConfig } from '../config.js';
@@ -22,28 +22,29 @@ export class APIClient {
     }
     
     isConfigured() {
-        // Toujours vrai car la clé est intégrée en dur
         return !!(this.config.api.url && this.config.api.key);
     }
     
     getHeaders() {
         return {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.config.api.key}`
+            'Authorization': `Bearer ${this.config.api.key}`,
+            // Recommandés par OpenRouter (optionnels mais évitent parfois des refus)
+            'HTTP-Referer': 'https://fsdfsdbs.github.io/test/',
+            'X-Title': 'Mon Chatbot'
         };
     }
     
     buildRequestBody(messages) {
         return {
-            model: 'glm-5.2',
+            model: this.config.api.model,
             messages: messages.map(msg => ({
                 role: msg.role,
                 content: msg.content
             })),
             temperature: this.config.settings.temperature,
             max_tokens: this.config.settings.maxTokens,
-            stream: this.config.settings.enableStreaming,
-            thinking: { type: 'enabled' } // optionnel, retire si tu veux désactiver le raisonnement GLM
+            stream: this.config.settings.enableStreaming
         };
     }
     
@@ -72,16 +73,16 @@ export class APIClient {
             
             if (!response.ok) {
                 const errorData = await this.parseErrorResponse(response);
+                console.log('Détail erreur OpenRouter:', errorData);
                 let errorMessage = errorData.message || `Erreur API: ${response.status} ${response.statusText}`;
                 
                 if (response.status === 401) {
-                    errorMessage = 'Erreur 401: Clé API Z.ai invalide ou expirée.';
+                    errorMessage = 'Erreur 401: Clé API OpenRouter invalide ou expirée.';
                 } else if (response.status === 403) {
                     errorMessage = 'Erreur 403: Accès refusé. Vérifiez les permissions.';
                 } else if (response.status === 404) {
-                    errorMessage = 'Erreur 404: Modèle non trouvé. Utilisez "glm-5.2".';
-} else if (response.status === 429) {
-                    console.log('Détail erreur Z.ai:', errorData);
+                    errorMessage = 'Erreur 404: Modèle non trouvé sur OpenRouter.';
+                } else if (response.status === 429) {
                     errorMessage = 'Erreur 429: Trop de requêtes. Attendez et réessayez.';
                 } else if (response.status >= 500) {
                     errorMessage = `Erreur serveur ${response.status}: Réessayez plus tard.`;
