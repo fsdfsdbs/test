@@ -25,9 +25,10 @@ const API_PROVIDERS = {
     openrouter: {
         url: 'https://openrouter.ai/api/v1/chat/completions',
         models: [
-            'deepseek/deepseek-r1:free',
-            'qwen/qwen-2.5-coder-32b-instruct:free',
-            'meta-llama/llama-3.3-70b-instruct:free'
+            'openrouter/free',
+            'openai/gpt-oss-120b:free',
+            'qwen/qwen3-coder:free',
+            'poolside/laguna-m.1:free'
         ],
         authHeader: 'Authorization',
         authPrefix: 'Bearer',
