@@ -1,7 +1,7 @@
 /**
  * API Client Class
  * Handles all API communications for the Claude AI Chatbot Clone
- * Adapted for GitHub DeepSeek API and other providers
+ * Updated for GitHub DeepSeek API support
  */
 
 import { getConfig, updateConfig } from '../config.js';
@@ -37,9 +37,7 @@ export class APIClient {
      * @returns {boolean} Is configured
      */
     isConfigured() {
-        // For GitHub, key might not be required if using authenticated session
-        // But we still need URL
-        return !!(this.config.api.url);
+        return !!(this.config.api.url && (this.config.api.key || this.config.api.provider === 'github'));
     }
     
     /**
@@ -51,18 +49,25 @@ export class APIClient {
             'Content-Type': 'application/json'
         };
         
-        // Add authorization header if key exists
+        // Add authorization header based on provider
         if (this.config.api.key) {
-            headers['Authorization'] = `Bearer ${this.config.api.key}`;
+            // GitHub uses 'token' prefix for Personal Access Tokens
+            if (this.config.api.provider === 'github' || 
+                this.config.api.url.includes('github.ai') || 
+                this.config.api.url.includes('github.com')) {
+                headers['Authorization'] = `token ${this.config.api.key}`;
+            } else {
+                // Most other APIs use Bearer token
+                headers['Authorization'] = `Bearer ${this.config.api.key}`;
+            }
         }
         
         // GitHub specific headers
-        if (this.config.api.provider === 'github' || this.config.api.url.includes('github.ai')) {
+        if (this.config.api.provider === 'github' || 
+            this.config.api.url.includes('github.ai') || 
+            this.config.api.url.includes('github.com')) {
             headers['Accept'] = 'application/json';
-            // GitHub might use different auth scheme
-            if (this.config.api.key) {
-                headers['Authorization'] = `token ${this.config.api.key}`;
-            }
+            headers['X-GitHub-Api-Version'] = '2022-11-28';
         }
         
         return headers;
@@ -76,65 +81,8 @@ export class APIClient {
     buildRequestBody(messages) {
         const provider = this.config.api.provider || this.detectProviderFromUrl();
         
-        // GitHub DeepSeek format
-        if (provider === 'github' || this.config.api.url.includes('github.ai')) {
-            return {
-                model: this.config.api.model || 'deepseek/DeepSeek-V3',
-                messages: messages.map(msg => ({
-                    role: msg.role,
-                    content: msg.content
-                })),
-                temperature: this.config.settings.temperature,
-                max_tokens: this.config.settings.maxTokens,
-                stream: this.config.settings.enableStreaming
-            };
-        }
-        
-        // Mistral format
-        if (provider === 'mistral') {
-            return {
-                model: this.config.api.model || 'mistral-tiny',
-                messages: messages.map(msg => ({
-                    role: msg.role,
-                    content: msg.content
-                })),
-                temperature: this.config.settings.temperature,
-                max_tokens: this.config.settings.maxTokens,
-                stream: this.config.settings.enableStreaming
-            };
-        }
-        
-        // OpenAI format
-        if (provider === 'openai') {
-            return {
-                model: this.config.api.model || 'gpt-3.5-turbo',
-                messages: messages.map(msg => ({
-                    role: msg.role,
-                    content: msg.content
-                })),
-                temperature: this.config.settings.temperature,
-                max_tokens: this.config.settings.maxTokens,
-                stream: this.config.settings.enableStreaming
-            };
-        }
-        
-        // Groq format
-        if (provider === 'groq') {
-            return {
-                model: this.config.api.model || 'llama3-8b-instant',
-                messages: messages.map(msg => ({
-                    role: msg.role,
-                    content: msg.content
-                })),
-                temperature: this.config.settings.temperature,
-                max_tokens: this.config.settings.maxTokens,
-                stream: this.config.settings.enableStreaming
-            };
-        }
-        
-        // Default format (GitHub-like)
-        return {
-            model: this.config.api.model || 'deepseek/DeepSeek-V3',
+        // Common request structure for most providers
+        const baseRequest = {
             messages: messages.map(msg => ({
                 role: msg.role,
                 content: msg.content
@@ -143,6 +91,25 @@ export class APIClient {
             max_tokens: this.config.settings.maxTokens,
             stream: this.config.settings.enableStreaming
         };
+        
+        // Add model if specified
+        if (this.config.api.model) {
+            baseRequest.model = this.config.api.model;
+        }
+        
+        // Provider-specific adjustments
+        if (provider === 'github' || this.config.api.url.includes('github.ai')) {
+            // GitHub DeepSeek API
+            baseRequest.model = this.config.api.model || 'deepseek/DeepSeek-V3';
+        } else if (provider === 'mistral') {
+            baseRequest.model = this.config.api.model || 'mistral-tiny';
+        } else if (provider === 'openai') {
+            baseRequest.model = this.config.api.model || 'gpt-3.5-turbo';
+        } else if (provider === 'groq') {
+            baseRequest.model = this.config.api.model || 'llama3-8b-instant';
+        }
+        
+        return baseRequest;
     }
     
     /**
@@ -175,7 +142,7 @@ export class APIClient {
      */
     async sendChatCompletion(messages, onSuccess, onError, onStream = null) {
         if (!this.isConfigured()) {
-            onError(new Error('Veuillez configurer l\'URL de l\'API dans les paramètres.'));
+            onError(new Error('Veuillez configurer l\'URL et la clé API dans les paramètres.'));
             return;
         }
         
@@ -191,7 +158,10 @@ export class APIClient {
             const requestBody = this.buildRequestBody(messages);
             const provider = this.config.api.provider || this.detectProviderFromUrl();
             
-            const response = await fetch(this.config.api.url, {
+            // For GitHub, use the configured URL (might be custom)
+            const apiUrl = this.config.api.url;
+            
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: this.getHeaders(),
                 body: JSON.stringify(requestBody),
@@ -200,7 +170,34 @@ export class APIClient {
             
             if (!response.ok) {
                 const errorData = await this.parseErrorResponse(response);
-                onError(new Error(errorData.message || `Erreur API: ${response.status} ${response.statusText}`));
+                
+                // Enhance error message with provider-specific guidance
+                let errorMessage = errorData.message || `Erreur API: ${response.status} ${response.statusText}`;
+                
+                if (response.status === 401) {
+                    if (provider === 'github' || this.config.api.url.includes('github')) {
+                        errorMessage = 'Erreur 401: Token GitHub invalide ou expiré. ' +
+                                      'Vérifiez que votre token a les permissions nécessaires (scope: public_repo). ' +
+                                      'Vous pouvez créer un nouveau token sur https://github.com/settings/tokens';
+                    } else {
+                        errorMessage = 'Erreur 401: Clé API invalide ou expirée. ' +
+                                      'Vérifiez votre clé API dans les paramètres.';
+                    }
+                } else if (response.status === 403) {
+                    errorMessage = 'Erreur 403: Accès refusé. ' +
+                                  'Vérifiez que votre clé/token a les bonnes permissions.';
+                } else if (response.status === 404) {
+                    errorMessage = 'Erreur 404: Modèle non trouvé. ' +
+                                  'Vérifiez que le modèle sélectionné est disponible pour ce fournisseur.';
+                } else if (response.status === 429) {
+                    errorMessage = 'Erreur 429: Trop de requêtes. ' +
+                                  'Attendez quelques secondes et réessayez.';
+                } else if (response.status >= 500) {
+                    errorMessage = `Erreur serveur ${response.status}: ` +
+                                  'Le service est temporairement indisponible. Réessayez plus tard.';
+                }
+                
+                onError(new Error(errorMessage));
                 return;
             }
             
@@ -215,7 +212,16 @@ export class APIClient {
             }
         } catch (error) {
             if (error.name !== 'AbortError') {
-                onError(error);
+                // Enhance network error messages
+                if (error.message && error.message.includes('Failed to fetch')) {
+                    onError(new Error('Impossible de se connecter à l\'API. ' +
+                                     'Vérifiez votre connexion internet et l\'URL de l\'API.'));
+                } else if (error.message && error.message.includes('401')) {
+                    onError(new Error('Erreur 401: Authentification échouée. ' +
+                                     'Vérifiez votre clé API ou token.'));
+                } else {
+                    onError(error);
+                }
             }
         } finally {
             this.abortController = null;
@@ -292,12 +298,29 @@ export class APIClient {
      */
     async parseErrorResponse(response) {
         try {
-            return await response.json();
+            const data = await response.json();
+            
+            // Handle GitHub-specific error format
+            if (data.message) {
+                return { message: data.message };
+            }
+            
+            // Handle DeepSeek-specific error format
+            if (data.error && data.error.message) {
+                return { message: data.error.message };
+            }
+            
+            // Handle standard error format
+            if (data.error) {
+                return { message: data.error };
+            }
+            
+            return data;
         } catch (e) {
             try {
                 const text = await response.text();
                 return {
-                    message: `Erreur ${response.status}: ${response.statusText}${text ? ' - ' + text : ''}`
+                    message: `Erreur ${response.status}: ${response.statusText}${text ? ' - ' + text.substring(0, 200) : ''}`
                 };
             } catch (e2) {
                 return {
@@ -314,40 +337,37 @@ export class APIClient {
      * @returns {string} Extracted response
      */
     extractResponse(data, provider = 'github') {
-        // GitHub DeepSeek format
-        if (provider === 'github' || this.config.api.url.includes('github.ai')) {
-            if (data.choices && data.choices[0] && data.choices[0].message) {
-                return data.choices[0].message.content || '';
+        // GitHub DeepSeek, Mistral, OpenAI, Groq format (all use similar structure)
+        if (data.choices && data.choices[0]) {
+            // Standard message format
+            if (data.choices[0].message && data.choices[0].message.content) {
+                return data.choices[0].message.content;
             }
-            if (data.message && data.message.content) {
-                return data.message.content;
+            // Streaming delta format
+            if (data.choices[0].delta && data.choices[0].delta.content) {
+                return data.choices[0].delta.content;
             }
-            if (data.output) {
-                return data.output;
-            }
-            if (data.result) {
-                return data.result;
-            }
-        }
-        
-        // Mistral/OpenAI format
-        if (provider === 'mistral' || provider === 'openai' || provider === 'groq') {
-            if (data.choices && data.choices[0] && data.choices[0].message) {
-                return data.choices[0].message.content || '';
+            // Some APIs return text directly in choices
+            if (data.choices[0].text) {
+                return data.choices[0].text;
             }
         }
         
-        // Generic fallback
-        if (data.outputs && data.outputs[0]) {
-            return data.outputs[0].text || '';
+        // Fallback for other formats
+        if (data.message && data.message.content) {
+            return data.message.content;
         }
         
-        if (data.completion) {
-            return data.completion;
+        if (data.output) {
+            return data.output;
         }
         
         if (data.result) {
             return data.result;
+        }
+        
+        if (data.completion) {
+            return data.completion;
         }
         
         // Try to find any string content
@@ -355,7 +375,8 @@ export class APIClient {
             return data;
         }
         
-        return '';
+        // Last resort: stringify the entire response
+        return JSON.stringify(data);
     }
     
     /**
@@ -365,27 +386,17 @@ export class APIClient {
      * @returns {string|null} Delta content or null
      */
     extractDelta(data, provider = 'github') {
-        // GitHub DeepSeek streaming format
-        if (provider === 'github' || this.config.api.url.includes('github.ai')) {
-            if (data.choices && data.choices[0] && data.choices[0].delta) {
-                return data.choices[0].delta.content || null;
-            }
-            if (data.message && data.message.content) {
-                return data.message.content;
-            }
-            if (data.output) {
-                return data.output;
-            }
+        // Standard streaming format for most providers
+        if (data.choices && data.choices[0] && data.choices[0].delta) {
+            return data.choices[0].delta.content || null;
         }
         
-        // Mistral/OpenAI streaming format
-        if (provider === 'mistral' || provider === 'openai' || provider === 'groq') {
-            if (data.choices && data.choices[0] && data.choices[0].delta) {
-                return data.choices[0].delta.content || null;
-            }
+        // Some APIs use message instead of delta
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+            return data.choices[0].message.content || null;
         }
         
-        // Generic fallback
+        // Fallback
         if (data.output) {
             return data.output;
         }
@@ -424,7 +435,8 @@ export class APIClient {
      * @returns {boolean} Is available
      */
     isModelAvailable(model) {
-        return true; // Assume all models are available
+        const availableModels = this.getAvailableModels();
+        return availableModels.includes(model);
     }
     
     /**
