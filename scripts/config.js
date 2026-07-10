@@ -8,7 +8,7 @@ const DEFAULT_CONFIG = {
     api: {
         provider: 'zai',
         url: 'https://api.z.ai/api/paas/v4/chat/completions',
-        key: 'TA_CLE_API_ZAI_ICI', // <-- mets ta clé ici
+        key: '49a8e0f69d1f437a8312766c60fdd1a4.gx96CPYhMzVViDQr', // <-- mets ta clé ici
         model: 'glm-5.2'
     },
     settings: {
