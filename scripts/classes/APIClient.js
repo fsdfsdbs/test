@@ -1,10 +1,10 @@
 /**
  * API Client Class
  * Handles all API communications for the Claude AI Chatbot Clone
- * Updated for GitHub DeepSeek API support
+ * Updated for GitHub DeepSeek API with correct URL and model names
  */
 
-import { getConfig, updateConfig } from '../config.js';
+import { getConfig, getProviderConfig } from '../config.js';
 import { estimateTokenCount } from '../utils/helpers.js';
 
 /**
@@ -45,6 +45,7 @@ export class APIClient {
      * @returns {Object} Headers object
      */
     getHeaders() {
+        const providerConfig = getProviderConfig(this.config.api.provider);
         const headers = {
             'Content-Type': 'application/json'
         };
@@ -53,8 +54,8 @@ export class APIClient {
         if (this.config.api.key) {
             // GitHub uses 'token' prefix for Personal Access Tokens
             if (this.config.api.provider === 'github' || 
-                this.config.api.url.includes('github.ai') || 
-                this.config.api.url.includes('github.com')) {
+                this.config.api.provider === 'deepseek' ||
+                this.config.api.url.includes('githubai.com')) {
                 headers['Authorization'] = `token ${this.config.api.key}`;
             } else {
                 // Most other APIs use Bearer token
@@ -64,8 +65,8 @@ export class APIClient {
         
         // GitHub specific headers
         if (this.config.api.provider === 'github' || 
-            this.config.api.url.includes('github.ai') || 
-            this.config.api.url.includes('github.com')) {
+            this.config.api.provider === 'deepseek' ||
+            this.config.api.url.includes('githubai.com')) {
             headers['Accept'] = 'application/json';
             headers['X-GitHub-Api-Version'] = '2022-11-28';
         }
@@ -79,9 +80,10 @@ export class APIClient {
      * @returns {Object} Request body
      */
     buildRequestBody(messages) {
-        const provider = this.config.api.provider || this.detectProviderFromUrl();
+        const providerConfig = getProviderConfig(this.config.api.provider);
+        const requestFormat = providerConfig.requestFormat || 'openai';
         
-        // Common request structure for most providers
+        // Common fields
         const baseRequest = {
             messages: messages.map(msg => ({
                 role: msg.role,
@@ -98,9 +100,13 @@ export class APIClient {
         }
         
         // Provider-specific adjustments
-        if (provider === 'github' || this.config.api.url.includes('github.ai')) {
-            // GitHub DeepSeek API
-            baseRequest.model = this.config.api.model || 'deepseek/DeepSeek-V3';
+        const provider = this.config.api.provider || this.detectProviderFromUrl();
+        
+        if (provider === 'github' || provider === 'deepseek' || this.config.api.url.includes('githubai.com')) {
+            // GitHub DeepSeek API - ensure correct model
+            if (!baseRequest.model || !['deepseek-chat', 'deepseek-coder'].includes(baseRequest.model)) {
+                baseRequest.model = 'deepseek-chat';
+            }
         } else if (provider === 'mistral') {
             baseRequest.model = this.config.api.model || 'mistral-tiny';
         } else if (provider === 'openai') {
@@ -118,8 +124,11 @@ export class APIClient {
      */
     detectProviderFromUrl() {
         const url = this.config.api.url || '';
-        if (url.includes('github.ai') || url.includes('github.com')) {
+        if (url.includes('githubai.com')) {
             return 'github';
+        }
+        if (url.includes('deepseek.com')) {
+            return 'deepseek';
         }
         if (url.includes('mistral.ai')) {
             return 'mistral';
@@ -158,7 +167,7 @@ export class APIClient {
             const requestBody = this.buildRequestBody(messages);
             const provider = this.config.api.provider || this.detectProviderFromUrl();
             
-            // For GitHub, use the configured URL (might be custom)
+            // For GitHub, use the configured URL
             const apiUrl = this.config.api.url;
             
             const response = await fetch(apiUrl, {
@@ -175,10 +184,10 @@ export class APIClient {
                 let errorMessage = errorData.message || `Erreur API: ${response.status} ${response.statusText}`;
                 
                 if (response.status === 401) {
-                    if (provider === 'github' || this.config.api.url.includes('github')) {
+                    if (provider === 'github' || this.config.api.url.includes('githubai.com')) {
                         errorMessage = 'Erreur 401: Token GitHub invalide ou expiré. ' +
-                                      'Vérifiez que votre token a les permissions nécessaires (scope: public_repo). ' +
-                                      'Vous pouvez créer un nouveau token sur https://github.com/settings/tokens';
+                                      'Vérifiez que votre token a le scope "public_repo". ' +
+                                      'Créez un nouveau token sur https://github.com/settings/tokens';
                     } else {
                         errorMessage = 'Erreur 401: Clé API invalide ou expirée. ' +
                                       'Vérifiez votre clé API dans les paramètres.';
@@ -187,8 +196,14 @@ export class APIClient {
                     errorMessage = 'Erreur 403: Accès refusé. ' +
                                   'Vérifiez que votre clé/token a les bonnes permissions.';
                 } else if (response.status === 404) {
-                    errorMessage = 'Erreur 404: Modèle non trouvé. ' +
-                                  'Vérifiez que le modèle sélectionné est disponible pour ce fournisseur.';
+                    if (provider === 'github' || this.config.api.url.includes('githubai.com')) {
+                        errorMessage = 'Erreur 404: Modèle ou endpoint non trouvé. ' +
+                                      'Vérifiez que l\'URL est "https://api.githubai.com/v1/chat/completions" ' +
+                                      'et que le modèle est "deepseek-chat" ou "deepseek-coder".';
+                    } else {
+                        errorMessage = 'Erreur 404: Modèle non trouvé. ' +
+                                      'Vérifiez que le modèle sélectionné est disponible pour ce fournisseur.';
+                    }
                 } else if (response.status === 429) {
                     errorMessage = 'Erreur 429: Trop de requêtes. ' +
                                   'Attendez quelques secondes et réessayez.';
@@ -444,35 +459,8 @@ export class APIClient {
      * @returns {Array} Array of available models
      */
     getAvailableModels() {
-        const provider = this.config.api.provider || this.detectProviderFromUrl();
-        
-        const models = {
-            github: [
-                'deepseek/DeepSeek-V3',
-                'deepseek/DeepSeek-V2',
-                'deepseek/DeepSeek-Coder-V2',
-                'deepseek/DeepSeek-Coder-V1.5',
-                'openai/gpt-4o',
-                'openai/gpt-4-turbo',
-                'openai/gpt-4',
-                'openai/gpt-3.5-turbo',
-                'anthropic/claude-3-haiku',
-                'anthropic/claude-3-sonnet',
-                'anthropic/claude-3-opus',
-                'meta/llama-3.1-70b',
-                'meta/llama-3.1-8b',
-                'meta/llama-3-70b',
-                'meta/llama-3-8b',
-                'mistral/mistral-large',
-                'mistral/mistral-small',
-                'mistral/mixtral-8x7b'
-            ],
-            mistral: ['mistral-tiny', 'mistral-small', 'mistral-medium', 'mistral-large'],
-            openai: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o'],
-            groq: ['llama3-8b-instant', 'llama3-70b-versatile', 'mixtral-8x7b-32768', 'gemma-7b-it']
-        };
-        
-        return models[provider] || models.github;
+        const providerConfig = getProviderConfig(this.config.api.provider);
+        return providerConfig.models || [];
     }
     
     /**
