@@ -1,6 +1,7 @@
 /**
  * Configuration Module
  * Centralized configuration for the Claude AI Chatbot Clone
+ * Updated to support GitHub DeepSeek API
  */
 
 // Default configuration
@@ -26,15 +27,32 @@ const DEFAULT_CONFIG = {
 const API_PROVIDERS = {
     mistral: {
         url: 'https://api.mistral.ai/v1/chat/completions',
-        models: ['mistral-tiny', 'mistral-small', 'mistral-medium', 'mistral-large']
+        models: ['mistral-tiny', 'mistral-small', 'mistral-medium', 'mistral-large'],
+        authHeader: 'Authorization',
+        authPrefix: 'Bearer',
+        requestFormat: 'mistral'
     },
     openai: {
         url: 'https://api.openai.com/v1/chat/completions',
-        models: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o']
+        models: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o'],
+        authHeader: 'Authorization',
+        authPrefix: 'Bearer',
+        requestFormat: 'openai'
     },
     groq: {
         url: 'https://api.groq.com/v1/chat/completions',
-        models: ['llama3-8b-instant', 'llama3-70b-versatile', 'mixtral-8x7b-32768', 'gemma-7b-it']
+        models: ['llama3-8b-instant', 'llama3-70b-versatile', 'mixtral-8x7b-32768', 'gemma-7b-it'],
+        authHeader: 'Authorization',
+        authPrefix: 'Bearer',
+        requestFormat: 'openai'
+    },
+    // GitHub DeepSeek API configuration
+    deepseek: {
+        url: 'https://api.deepseek.com/v1/chat/completions',
+        models: ['deepseek-chat', 'deepseek-coder'],
+        authHeader: 'Authorization',
+        authPrefix: 'Bearer',
+        requestFormat: 'openai' // DeepSeek uses OpenAI-compatible format
     }
 };
 
