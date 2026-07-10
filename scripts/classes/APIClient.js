@@ -1,7 +1,7 @@
 /**
  * API Client Class
  * Handles all API communications for the Claude AI Chatbot Clone
- * Updated for GitHub DeepSeek API with correct model names
+ * Updated for Z.ai GLM API (GLM-5.2)
  */
 
 import { getConfig, getProviderConfig } from '../config.js';
@@ -41,6 +41,7 @@ export class APIClient {
                 this.config.api.url.includes('githubai.com')) {
                 headers['Authorization'] = `token ${this.config.api.key}`;
             } else {
+                // zai, mistral, openai, groq -> Bearer
                 headers['Authorization'] = `Bearer ${this.config.api.key}`;
             }
         }
@@ -77,6 +78,12 @@ export class APIClient {
             if (!baseRequest.model || !['DeepSeek-V3-0324', 'DeepSeek-Coder-V2-0314'].includes(baseRequest.model)) {
                 baseRequest.model = 'DeepSeek-V3-0324';
             }
+        } else if (provider === 'zai' || this.config.api.url.includes('api.z.ai')) {
+            if (!baseRequest.model || !['glm-5.2', 'glm-5.1', 'glm-4.6'].includes(baseRequest.model)) {
+                baseRequest.model = 'glm-5.2';
+            }
+            // Options spécifiques GLM (optionnelles)
+            baseRequest.thinking = { type: 'enabled' };
         } else if (provider === 'mistral') {
             baseRequest.model = this.config.api.model || 'mistral-tiny';
         } else if (provider === 'openai') {
@@ -92,6 +99,7 @@ export class APIClient {
         const url = this.config.api.url || '';
         if (url.includes('githubai.com')) return 'github';
         if (url.includes('deepseek.com')) return 'deepseek';
+        if (url.includes('api.z.ai')) return 'zai';
         if (url.includes('mistral.ai')) return 'mistral';
         if (url.includes('openai.com')) return 'openai';
         if (url.includes('groq.com')) return 'groq';
@@ -130,6 +138,8 @@ export class APIClient {
                 if (response.status === 401) {
                     if (provider === 'github' || this.config.api.url.includes('githubai.com')) {
                         errorMessage = 'Erreur 401: Token GitHub invalide ou expiré. Vérifiez le scope "public_repo".';
+                    } else if (provider === 'zai' || this.config.api.url.includes('api.z.ai')) {
+                        errorMessage = 'Erreur 401: Clé API Z.ai invalide ou expirée.';
                     } else {
                         errorMessage = 'Erreur 401: Clé API invalide ou expirée.';
                     }
@@ -138,6 +148,8 @@ export class APIClient {
                 } else if (response.status === 404) {
                     if (provider === 'github' || this.config.api.url.includes('githubai.com')) {
                         errorMessage = 'Erreur 404: Modèle non trouvé. Utilisez "DeepSeek-V3-0324" ou "DeepSeek-Coder-V2-0314".';
+                    } else if (provider === 'zai' || this.config.api.url.includes('api.z.ai')) {
+                        errorMessage = 'Erreur 404: Modèle non trouvé. Utilisez "glm-5.2".';
                     } else {
                         errorMessage = 'Erreur 404: Modèle non trouvé.';
                     }
