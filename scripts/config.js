@@ -1,7 +1,7 @@
 /**
  * Configuration Module
  * Centralized configuration for the Claude AI Chatbot Clone
- * Updated for GitHub DeepSeek API with correct model names and URL
+ * Updated for GitHub DeepSeek API with CORRECT model names (DeepSeek-V3-0324)
  */
 
 // Default configuration
@@ -10,7 +10,7 @@ const DEFAULT_CONFIG = {
         provider: 'github',
         url: 'https://api.githubai.com/v1/chat/completions',
         key: '',
-        model: 'deepseek-chat'
+        model: 'DeepSeek-V3-0324'
     },
     settings: {
         temperature: 0.7,
@@ -46,10 +46,10 @@ const API_PROVIDERS = {
         authPrefix: 'Bearer',
         requestFormat: 'openai'
     },
-    // GitHub DeepSeek API configuration (CORRECT URL AND MODELS)
+    // GitHub DeepSeek API configuration (CORRECT MODEL NAMES)
     github: {
         url: 'https://api.githubai.com/v1/chat/completions',
-        models: ['deepseek-chat', 'deepseek-coder'],
+        models: ['DeepSeek-V3-0324', 'DeepSeek-Coder-V2-0314'],
         authHeader: 'Authorization',
         authPrefix: 'token',
         requestFormat: 'openai'
@@ -57,7 +57,7 @@ const API_PROVIDERS = {
     // Alias for backward compatibility
     deepseek: {
         url: 'https://api.githubai.com/v1/chat/completions',
-        models: ['deepseek-chat', 'deepseek-coder'],
+        models: ['DeepSeek-V3-0324', 'DeepSeek-Coder-V2-0314'],
         authHeader: 'Authorization',
         authPrefix: 'token',
         requestFormat: 'openai'
@@ -91,7 +91,7 @@ export function loadConfig() {
             // Ensure GitHub provider uses correct models
             if (config.api.provider === 'github' || config.api.url.includes('githubai.com')) {
                 if (!config.api.model || !API_PROVIDERS.github.models.includes(config.api.model)) {
-                    config.api.model = 'deepseek-chat';
+                    config.api.model = 'DeepSeek-V3-0324';
                 }
             }
         } catch (e) {
@@ -174,7 +174,7 @@ export async function loadConfigFromFile() {
                     (fileConfig.api.url && fileConfig.api.url.includes('githubai.com'))) {
                     const validModels = API_PROVIDERS.github.models;
                     if (fileConfig.api.model && !validModels.includes(fileConfig.api.model)) {
-                        fileConfig.api.model = 'deepseek-chat';
+                        fileConfig.api.model = 'DeepSeek-V3-0324';
                     }
                 }
                 updateConfig({ api: fileConfig.api });
