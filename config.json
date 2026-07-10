@@ -1,17 +1,8 @@
 {
   "api": {
-    "provider": "openai",
-    "url": "https://models.github.ai/inference",
-    "key": "",
-    "model": "deepseek/DeepSeek-V3"
-  },
-  "settings": {
-    "temperature": 0.7,
-    "maxTokens": 32000,
-    "theme": "system",
-    "fontSize": "medium",
-    "enableStreaming": true,
-    "saveHistory": true,
-    "enterToSend": false
+    "provider": "zai",
+    "url": "https://api.z.ai/api/paas/v4/chat/completions",
+    "key": "TA_CLE_API_ZAI",
+    "model": "glm-5.2"
   }
 }
