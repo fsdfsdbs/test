@@ -80,8 +80,10 @@ export class APIClient {
                     errorMessage = 'Erreur 403: Accès refusé. Vérifiez les permissions.';
                 } else if (response.status === 404) {
                     errorMessage = 'Erreur 404: Modèle non trouvé. Utilisez "glm-5.2".';
-                } else if (response.status === 429) {
-                    errorMessage = 'Erreur 429: Trop de requêtes. Attendez et réessayez.';
+               } else if (response.status === 429) {
+    console.log('Détail erreur Z.ai:', errorData);
+    errorMessage = 'Erreur 429: Trop de requêtes. Attendez et réessayez.';
+}
                 } else if (response.status >= 500) {
                     errorMessage = `Erreur serveur ${response.status}: Réessayez plus tard.`;
                 }
