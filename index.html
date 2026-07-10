@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claude AI Chatbot Clone - Pour Développeurs</title>
+    <title>Chatbot IA - GitHub DeepSeek</title>
     
     <!-- Styles -->
     <link rel="stylesheet" href="styles/main.css">
@@ -13,7 +13,6 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
     
-    <!-- Custom inline styles for dark theme by default -->
     <style>
         :root {
             --color-bg-primary: #1e1e1e;
@@ -21,44 +20,23 @@
             --color-bg-tertiary: #3a3a3a;
             --color-bg-hover: #3a3a3a;
             --color-bg-active: #4a4a4a;
-            
             --color-text-primary: #f5f5f5;
             --color-text-secondary: #a1a1aa;
             --color-text-tertiary: #71717a;
-            --color-text-muted: #52525b;
-            
             --color-border: #3a3a3a;
-            --color-border-light: #2d2d2d;
-            --color-border-dark: #4a4a4a;
-            
             --color-primary: #58a6ff;
-            --color-primary-light: rgba(88, 166, 255, 0.1);
-            --color-primary-dark: #3b82f6;
-            
             --color-user-bubble: #58a6ff;
             --color-user-text: #ffffff;
             --color-ai-bubble: #2d2d2d;
             --color-ai-text: #f5f5f5;
-            
             --color-success: #10b981;
             --color-error: #ef4444;
-            --color-warning: #f59e0b;
-            --color-info: #58a6ff;
         }
         
-        /* Ensure code blocks use monospace font */
         code, pre, .hljs {
             font-family: 'Fira Code', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
         }
         
-        /* Mobile responsiveness for code blocks */
-        @media (max-width: 768px) {
-            .code-block-container {
-                width: 100%;
-            }
-        }
-        
-        /* Fix for loading screen */
         .loading-screen {
             display: flex;
             align-items: center;
@@ -115,7 +93,7 @@
                     </div>
                     <div class="user-details">
                         <div class="user-name">Développeur</div>
-                        <div class="user-status">Prêt à coder</div>
+                        <div class="user-status">GitHub DeepSeek</div>
                     </div>
                 </div>
                 <button class="settings-btn" id="settingsBtn" aria-label="Paramètres">
@@ -137,7 +115,6 @@
         <!-- Main Chat Area -->
         <main class="main-chat" id="mainChat">
             <div class="chat-container">
-                <!-- Chat Header -->
                 <header class="chat-header">
                     <div class="chat-title">
                         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -165,79 +142,35 @@
                                 <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                             </svg>
                         </button>
-                        <button class="chat-action-btn close-chat-btn mobile-only" id="closeChatBtn" aria-label="Fermer">
-                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M18 6L6 18M6 6l12 12"/>
-                            </svg>
-                        </button>
                     </div>
                 </header>
                 
-                <!-- Messages Area -->
                 <div class="messages" id="messages">
-                    <!-- Welcome Message -->
                     <div class="welcome-message" id="welcomeMessage">
                         <div class="welcome-logo">
                             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                             </svg>
                         </div>
-                        <h1>Chatbot IA pour Développeurs</h1>
-                        <p>Demande-moi de l'aide pour ton code, des explications, ou des exemples. Je peux aussi exécuter du JavaScript directement !</p>
+                        <h1>Chatbot avec GitHub DeepSeek</h1>
+                        <p>Utilise l'IA DeepSeek de GitHub pour coder, expliquer, générer et optimiser ton code.</p>
                         <div class="quick-prompts">
-                            <button class="quick-prompt" data-prompt="Explique-moi comment fonctionne cette fonction JavaScript: function add(a, b) { return a + b; }">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                                </svg>
+                            <button class="quick-prompt" data-prompt="Explique-moi ce code JavaScript: function factorial(n) { return n <= 1 ? 1 : n * factorial(n - 1); }">
                                 <span>Expliquer du code</span>
                             </button>
-                            <button class="quick-prompt" data-prompt="Corrige ce code JavaScript: function sum(arr) { let total; for (let i = 0; i < arr.length; i++) { total += arr[i]; } return total; }">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                </svg>
+                            <button class="quick-prompt" data-prompt="Corrige ce code: function sum(arr) { let total; for (let i = 0; i < arr.length; i++) { total += arr[i]; } return total; }">
                                 <span>Corriger du code</span>
                             </button>
-                            <button class="quick-prompt" data-prompt="Génère un exemple de code pour un API REST en Node.js avec Express et MongoDB">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                                </svg>
+                            <button class="quick-prompt" data-prompt="Génère un exemple d'API REST avec Node.js, Express et MongoDB">
                                 <span>Générer du code</span>
-                            </button>
-                            <button class="quick-prompt" data-prompt="Quelles sont les meilleures pratiques pour le code JavaScript moderne en 2026?">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0 1 12 2.944a11.955 11.955 0 0 1-8.618 3.04A12.02 12.02 0 0 0 3 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                                </svg>
-                                <span>Meilleures pratiques</span>
-                            </button>
-                            <button class="quick-prompt" data-prompt="Écris un test unitaire avec Jest pour cette fonction: function multiply(a, b) { return a * b; }">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                    <polyline points="14,2 14,8 20,8"/>
-                                    <line x1="16" y1="13" x2="8" y2="13"/>
-                                    <line x1="16" y1="17" x2="8" y2="17"/>
-                                </svg>
-                                <span>Tests unitaires</span>
-                            </button>
-                            <button class="quick-prompt" data-prompt="Comment optimiser les performances de cette boucle: for (let i = 0; i < largeArray.length; i++) { console.log(largeArray[i]); }">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                                </svg>
-                                <span>Optimisation</span>
                             </button>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Input Area -->
                 <div class="input-area">
                     <div class="input-container">
-                        <textarea 
-                            id="messageInput" 
-                            placeholder="Écris un message ou colle du code... (Ctrl+K pour un nouveau chat, Ctrl+Entrée pour envoyer)"
-                            rows="1"
-                            autofocus
-                        ></textarea>
+                        <textarea id="messageInput" placeholder="Écris un message ou colle du code..." rows="1" autofocus></textarea>
                         <button class="stop-btn" id="stopBtn" style="display: none;" aria-label="Arrêter">
                             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="6" y="6" width="12" height="12" rx="2"/>
@@ -250,7 +183,7 @@
                         </button>
                     </div>
                     <div class="input-info">
-                        <span id="modelInfo">Modèle: mistral-tiny</span>
+                        <span id="modelInfo">Modèle: deepseek/DeepSeek-V3</span>
                         <span id="tokenCount">0 / 32000 jetons</span>
                     </div>
                 </div>
@@ -263,7 +196,7 @@
         <div class="modal">
             <div class="modal-header">
                 <h2>Paramètres</h2>
-                <button class="close-btn" id="closeSettingsBtn" aria-label="Fermer">
+                <button class="close-btn" id="closeSettingsBtn">
                     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 6L6 18M6 6l12 12"/>
                     </svg>
@@ -271,23 +204,24 @@
             </div>
             <div class="modal-body">
                 <div class="settings-section">
-                    <h3>Paramètres API</h3>
+                    <h3>Paramètres API GitHub</h3>
                     <div class="form-group">
                         <label for="apiProvider">Fournisseur</label>
                         <select id="apiProvider">
-                            <option value="mistral" selected>Mistral AI</option>
+                            <option value="github" selected>GitHub AI</option>
+                            <option value="mistral">Mistral AI</option>
                             <option value="openai">OpenAI</option>
                             <option value="groq">Groq</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label for="apiUrl">URL de l'API</label>
-                        <input type="text" id="apiUrl" placeholder="https://api.mistral.ai/v1/chat/completions" value="https://api.mistral.ai/v1/chat/completions">
+                        <input type="text" id="apiUrl" value="https://models.github.ai/inference">
                     </div>
                     <div class="form-group password-input">
-                        <label for="apiKey">Clé API</label>
-                        <input type="password" id="apiKey" placeholder="Votre clé API">
-                        <button class="toggle-password" id="togglePassword" aria-label="Montrer/Cacher">
+                        <label for="apiKey">Clé API GitHub</label>
+                        <input type="password" id="apiKey" placeholder="Ta clé API GitHub">
+                        <button class="toggle-password" id="togglePassword">
                             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                                 <circle cx="12" cy="12" r="3"/>
@@ -295,24 +229,23 @@
                         </button>
                     </div>
                     <div class="form-group">
-                        <label for="apiModel">Modèle</label>
+                        <label for="apiModel">Modèle DeepSeek</label>
                         <select id="apiModel">
-                            <option value="mistral-tiny" selected>mistral-tiny</option>
-                            <option value="mistral-small">mistral-small</option>
-                            <option value="mistral-medium">mistral-medium</option>
-                            <option value="mistral-large">mistral-large</option>
+                            <option value="deepseek/DeepSeek-V3" selected>deepseek/DeepSeek-V3</option>
+                            <option value="deepseek/DeepSeek-V2">deepseek/DeepSeek-V2</option>
+                            <option value="deepseek/DeepSeek-Coder-V2">deepseek/DeepSeek-Coder-V2</option>
                         </select>
                     </div>
                 </div>
                 
                 <div class="settings-section">
-                    <h3>Paramètres de l'IA</h3>
+                    <h3>Paramètres IA</h3>
                     <div class="form-group">
                         <label for="temperature">Température: <span id="temperatureValue">0.7</span></label>
                         <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7">
                     </div>
                     <div class="form-group">
-                        <label for="maxTokens">Jetons maximum</label>
+                        <label for="maxTokens">Jetons max</label>
                         <input type="number" id="maxTokens" value="32000" min="1">
                     </div>
                 </div>
@@ -327,14 +260,6 @@
                             <option value="dark" selected>Sombre</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="fontSize">Taille de la police</label>
-                        <select id="fontSize">
-                            <option value="small">Petite</option>
-                            <option value="medium" selected>Moyenne</option>
-                            <option value="large">Grande</option>
-                        </select>
-                    </div>
                 </div>
                 
                 <div class="settings-section">
@@ -343,21 +268,14 @@
                         <label class="checkbox-label">
                             <input type="checkbox" id="enableStreaming" checked>
                             <span class="checkmark"></span>
-                            <span>Activer le streaming</span>
+                            <span>Streaming</span>
                         </label>
                     </div>
                     <div class="checkbox-group">
                         <label class="checkbox-label">
                             <input type="checkbox" id="saveHistory" checked>
                             <span class="checkmark"></span>
-                            <span>Sauvegarder l'historique</span>
-                        </label>
-                    </div>
-                    <div class="checkbox-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="enterToSend">
-                            <span class="checkmark"></span>
-                            <span>Envoyer avec Entrée (sinon Shift+Entrée)</span>
+                            <span>Sauvegarder historique</span>
                         </label>
                     </div>
                 </div>
@@ -374,7 +292,7 @@
         <div class="modal">
             <div class="modal-header">
                 <h2>Partager</h2>
-                <button class="close-btn" id="closeShareBtn" aria-label="Fermer">
+                <button class="close-btn" id="closeShareBtn">
                     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 6L6 18M6 6l12 12"/>
                     </svg>
@@ -387,27 +305,14 @@
                             <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
                             <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
                         </svg>
-                        <span>Copier le lien</span>
+                        <span>Copier lien</span>
                     </button>
                     <button class="share-option" id="exportJsonBtn">
                         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                             <polyline points="14,2 14,8 20,8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                            <polyline points="10,9 9,9 8,9"/>
                         </svg>
-                        <span>Exporter en JSON</span>
-                    </button>
-                    <button class="share-option" id="exportHtmlBtn">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14,2 14,8 20,8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                            <polyline points="10,9 9,9 8,9"/>
-                        </svg>
-                        <span>Exporter en HTML</span>
+                        <span>Exporter JSON</span>
                     </button>
                 </div>
             </div>
@@ -421,58 +326,26 @@
         </svg>
     </div>
     
-    <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
     
-    <!-- Load highlight.js BEFORE the module script -->
+    <!-- Load highlight.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    
-    <!-- Register languages for highlight.js -->
     <script>
-        // Register common languages
-        hljs.registerLanguage('javascript', window.hljsLanguages?.javascript || function(){});
-        hljs.registerLanguage('python', window.hljsLanguages?.python || function(){});
-        hljs.registerLanguage('html', window.hljsLanguages?.xml || function(){});
-        hljs.registerLanguage('css', window.hljsLanguages?.css || function(){});
-        hljs.registerLanguage('bash', window.hljsLanguages?.bash || function(){});
-        hljs.registerLanguage('json', window.hljsLanguages?.json || function(){});
-        
-        // Configure highlight.js
-        hljs.configure({
-            tabReplace: '    ',
-            useBR: false,
-            languages: ['javascript', 'python', 'html', 'css', 'bash', 'json']
-        });
+        hljs.configure({ tabReplace: '    ', useBR: false, languages: ['javascript', 'python', 'html', 'css', 'bash', 'json'] });
     </script>
     
-    <!-- Main app script (ES Module) -->
+    <!-- Main app -->
     <script type="module">
-        // Wait for DOM to be fully loaded
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                // Import and initialize the app
                 const { ChatApp } = await import('./scripts/classes/ChatApp.js');
                 window.chatApp = new ChatApp();
-                
-                // Hide loading screen after app is ready
                 const loadingScreen = document.getElementById('loadingScreen');
-                if (loadingScreen) {
-                    setTimeout(() => {
-                        loadingScreen.classList.add('hidden');
-                    }, 500);
-                }
+                if (loadingScreen) setTimeout(() => loadingScreen.classList.add('hidden'), 500);
             } catch (error) {
-                console.error('Error loading app:', error);
+                console.error('Error:', error);
                 const loadingScreen = document.getElementById('loadingScreen');
-                if (loadingScreen) {
-                    loadingScreen.innerHTML = `
-                        <div style="text-align: center; color: #ef4444; padding: 20px;">
-                            <h2>Erreur de chargement</h2>
-                            <p>${error.message}</p>
-                            <p>Veuillez rafraîchir la page.</p>
-                        </div>
-                    `;
-                }
+                if (loadingScreen) loadingScreen.innerHTML = `<div style="text-align:center;color:#ef4444;padding:20px"><h2>Erreur</h2><p>${error.message}</p></div>`;
             }
         });
     </script>
