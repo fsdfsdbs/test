@@ -1,19 +1,18 @@
 /**
  * Configuration Module
- * Verrouillé sur Z.ai GLM-5.2 - clé API intégrée
+ * Verrouillé sur OpenRouter - clé API intégrée
  */
 
-// Configuration fixe - un seul provider, pas de choix utilisateur
 const DEFAULT_CONFIG = {
     api: {
-        provider: 'zai',
-        url: 'https://api.z.ai/api/paas/v4/chat/completions',
-        key: '49a8e0f69d1f437a8312766c60fdd1a4.gx96CPYhMzVViDQr', // <-- mets ta clé ici
-        model: 'glm-5.2'
+        provider: 'openrouter',
+        url: 'https://openrouter.ai/api/v1/chat/completions',
+        key: 'TA_CLE_OPENROUTER_ICI', // <-- mets ta clé ici
+        model: 'deepseek/deepseek-r1:free'
     },
     settings: {
         temperature: 0.7,
-        maxTokens: 32000,
+        maxTokens: 8000,
         theme: 'dark',
         fontSize: 'medium',
         enableStreaming: true,
@@ -23,22 +22,21 @@ const DEFAULT_CONFIG = {
 };
 
 const API_PROVIDERS = {
-    zai: {
-        url: 'https://api.z.ai/api/paas/v4/chat/completions',
-        models: ['glm-5.2'],
+    openrouter: {
+        url: 'https://openrouter.ai/api/v1/chat/completions',
+        models: [
+            'deepseek/deepseek-r1:free',
+            'qwen/qwen-2.5-coder-32b-instruct:free',
+            'meta-llama/llama-3.3-70b-instruct:free'
+        ],
         authHeader: 'Authorization',
         authPrefix: 'Bearer',
         requestFormat: 'openai'
     }
 };
 
-// State management
 let config = { ...DEFAULT_CONFIG };
 
-/**
- * Load configuration - ne charge QUE les settings (theme, etc.)
- * depuis localStorage, jamais l'API (verrouillée en dur)
- */
 export function loadConfig() {
     const savedConfig = localStorage.getItem('chatbotConfig');
     if (savedConfig) {
@@ -50,7 +48,7 @@ export function loadConfig() {
                     ...config.settings,
                     ...parsedConfig.settings
                 }
-                // api volontairement ignoré : toujours DEFAULT_CONFIG.api
+                // api volontairement ignoré : toujours DEFAULT_CONFIG
             };
         } catch (e) {
             console.error('Error loading config:', e);
@@ -62,9 +60,6 @@ export function saveConfig() {
     localStorage.setItem('chatbotConfig', JSON.stringify(config));
 }
 
-/**
- * Update configuration - bloque toute modification de l'API
- */
 export function updateConfig(updates) {
     config = {
         ...config,
@@ -72,7 +67,6 @@ export function updateConfig(updates) {
             ...config.settings,
             ...updates.settings
         }
-        // api ignoré ici aussi
     };
     saveConfig();
 }
@@ -82,7 +76,7 @@ export function getConfig() {
 }
 
 export function getProviderConfig() {
-    return API_PROVIDERS.zai;
+    return API_PROVIDERS.openrouter;
 }
 
 export function getAllProviders() {
@@ -95,7 +89,6 @@ export function resetConfig() {
 }
 
 export async function loadConfigFromFile() {
-    // Désactivé : la config API vient uniquement de DEFAULT_CONFIG
     return;
 }
 
