@@ -2,6 +2,7 @@
  * UI Manager Class
  * Manages all UI operations for the Claude AI Chatbot Clone
  * Enhanced for coding: code preview, syntax highlighting, action buttons
+ * Adapted for GitHub DeepSeek API
  */
 
 import {
@@ -199,7 +200,6 @@ export class UIManager {
             languages.forEach(lang => {
                 try {
                     // Use dynamic import for ES modules
-                    // Note: This won't work in all browsers, but we'll try
                     import(`https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/es/languages/${lang}.min.js`)
                         .then(module => {
                             if (module && module.default) {
@@ -908,12 +908,18 @@ export class UIManager {
     loadSettingsForm() {
         const config = JSON.parse(localStorage.getItem('chatbotConfig') || '{}');
         
-        // API Settings
-        if (config.api && this.elements.apiProvider) {
-            this.elements.apiProvider.value = config.api.provider || 'mistral';
-            this.elements.apiUrl.value = config.api.url || '';
-            this.elements.apiKey.value = config.api.key || '';
-            this.elements.apiModel.value = config.api.model || 'mistral-tiny';
+        // API Settings - Default to GitHub DeepSeek
+        if (this.elements.apiProvider) {
+            this.elements.apiProvider.value = config.api?.provider || 'github';
+        }
+        if (this.elements.apiUrl) {
+            this.elements.apiUrl.value = config.api?.url || 'https://models.github.ai/inference';
+        }
+        if (this.elements.apiKey) {
+            this.elements.apiKey.value = config.api?.key || '';
+        }
+        if (this.elements.apiModel) {
+            this.elements.apiModel.value = config.api?.model || 'deepseek/DeepSeek-V3';
         }
         
         // UI Settings
@@ -953,10 +959,10 @@ export class UIManager {
     saveSettings() {
         const config = {
             api: {
-                provider: this.elements.apiProvider?.value || 'mistral',
-                url: this.elements.apiUrl?.value.trim() || '',
+                provider: this.elements.apiProvider?.value || 'github',
+                url: this.elements.apiUrl?.value.trim() || 'https://models.github.ai/inference',
                 key: this.elements.apiKey?.value.trim() || '',
-                model: this.elements.apiModel?.value || 'mistral-tiny'
+                model: this.elements.apiModel?.value || 'deepseek/DeepSeek-V3'
             },
             settings: {
                 temperature: parseFloat(this.elements.temperature?.value) || 0.7,
@@ -992,6 +998,7 @@ export class UIManager {
         
         const provider = e.target.value;
         const providers = {
+            github: 'https://models.github.ai/inference',
             mistral: 'https://api.mistral.ai/v1/chat/completions',
             openai: 'https://api.openai.com/v1/chat/completions',
             groq: 'https://api.groq.com/v1/chat/completions'
@@ -1001,12 +1008,32 @@ export class UIManager {
         
         // Update model options based on provider
         const models = {
+            github: [
+                'deepseek/DeepSeek-V3',
+                'deepseek/DeepSeek-V2', 
+                'deepseek/DeepSeek-Coder-V2',
+                'deepseek/DeepSeek-Coder-V1.5',
+                'openai/gpt-4o',
+                'openai/gpt-4-turbo',
+                'openai/gpt-4',
+                'openai/gpt-3.5-turbo',
+                'anthropic/claude-3-haiku',
+                'anthropic/claude-3-sonnet',
+                'anthropic/claude-3-opus',
+                'meta/llama-3.1-70b',
+                'meta/llama-3.1-8b',
+                'meta/llama-3-70b',
+                'meta/llama-3-8b',
+                'mistral/mistral-large',
+                'mistral/mistral-small',
+                'mistral/mixtral-8x7b'
+            ],
             mistral: ['mistral-tiny', 'mistral-small', 'mistral-medium', 'mistral-large'],
             openai: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o'],
             groq: ['llama3-8b-instant', 'llama3-70b-versatile', 'mixtral-8x7b-32768', 'gemma-7b-it']
         };
         
-        this.updateModelOptions(models[provider] || models.mistral);
+        this.updateModelOptions(models[provider] || models.github);
     }
     
     /**
@@ -1032,6 +1059,9 @@ export class UIManager {
         // Restore previous selection if available
         if (models.includes(currentValue)) {
             modelSelect.value = currentValue;
+        } else if (models.length > 0) {
+            // Select first model if current not available
+            modelSelect.value = models[0];
         }
     }
     
