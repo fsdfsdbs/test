@@ -1,14 +1,14 @@
 /**
- * LocalAI Class - V3 (Hybride, complet)
- * Moteur d'IA local : templates/mots-cles pour le code + petit modele de langage
- * local (Transformers.js, via CDN) pour tout le reste.
- * 100% dans le navigateur, aucune API externe, aucune cle, aucune installation
+ * Hugging Face AI Class - V3 (Hybride, complet)
+ * Moteur d'IA Hugging Face : templates/mots-clés pour le code + petit modèle de langage
+ * Hugging Face (Transformers.js, via CDN) pour tout le reste.
+ * 100% dans le navigateur, aucune API externe, aucune clé, aucune installation
  * npm requise (fonctionne tel quel sur GitHub Pages).
  */
 
 import { getConfig } from '../config.js';
 import { createElement, showToast } from '../utils/dom.js';
-// Import direct depuis un CDN : pas besoin de npm install, ca marche sur GitHub Pages
+// Import direct depuis un CDN : pas besoin de npm install, ça marche sur GitHub Pages
 import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0';
 
 const CONFIDENCE_THRESHOLD = 25;
@@ -26,10 +26,10 @@ const SYNONYMS = {
 };
 
 /**
- * LocalAI - IA locale hybride : templates de code fiables + modele de langage local
- * pour la comprehension libre, avec base de connaissances persistante.
+ * Hugging Face AI - IA hybride : templates de code fiables + modèle de langage Hugging Face
+ * pour la compréhension libre, avec base de connaissances persistante.
  */
-export class LocalAI {
+export class HuggingFaceAI {
     constructor() {
         this.conversations = [];
         this.knowledgeBase = this.loadKnowledgeBase();
@@ -42,15 +42,15 @@ export class LocalAI {
     }
 
     // ---------------------------------------------------------------------
-    // Chargement et appel du modele local (Transformers.js)
+    // Chargement et appel du modèle Hugging Face (Transformers.js)
     // ---------------------------------------------------------------------
 
     /**
-     * Charge le modele local une seule fois (mis en cache navigateur ensuite via IndexedDB)
+     * Charge le modèle Hugging Face une seule fois (mis en cache navigateur ensuite via IndexedDB)
      * @param {function} [onProgress] callback optionnel (ex: pour afficher une barre de progression)
      * @returns {Promise<object>}
      */
-    async loadLocalModel(onProgress) {
+    async loadHuggingFaceModel(onProgress) {
         if (this.model) return this.model;
         if (this.modelLoading) return this.modelLoading;
 
@@ -58,7 +58,7 @@ export class LocalAI {
             'text-generation',
             'Xenova/Qwen1.5-0.5B-Chat',
             {
-                dtype: 'q4',        // version quantifiee : plus legere, plus rapide
+                dtype: 'q4',        // version quantifiée : plus légère, plus rapide
                 device: 'webgpu',   // fallback automatique vers wasm si webgpu indisponible
                 progress_callback: onProgress
             }
@@ -67,7 +67,7 @@ export class LocalAI {
             this.modelReady = true;
             return model;
         }).catch(err => {
-            console.error('Erreur de chargement du modele local :', err);
+            console.error('Erreur de chargement du modèle Hugging Face :', err);
             this.modelLoading = null;
             throw err;
         });
@@ -76,22 +76,22 @@ export class LocalAI {
     }
 
     /**
-     * Genere une reponse libre via le modele local, avec du contexte issu de la
-     * base de connaissances (RAG leger) pour limiter les inventions.
+     * Génère une réponse libre via le modèle Hugging Face, avec du contexte issu de la
+     * base de connaissances (RAG léger) pour limiter les inventions.
      * @param {string} query
      * @param {Array} conversationHistory
      * @param {Array} contextEntries
      * @returns {Promise<string>}
      */
     async generateModelResponse(query, conversationHistory = [], contextEntries = []) {
-        const model = await this.loadLocalModel();
+        const model = await this.loadHuggingFaceModel();
 
-        let systemPrompt = "Tu es un assistant utile qui repond en francais, de facon claire et concise.";
+        let systemPrompt = "Tu es un assistant utile qui répond en français, de façon claire et concise.";
         if (contextEntries.length > 0) {
             const contextText = contextEntries
                 .map(e => `Q: ${e.question}\nR: ${e.answer}`)
                 .join('\n\n');
-            systemPrompt += `\n\nVoici des informations qui peuvent t'aider a repondre (ne les recopie pas telles quelles si non pertinentes) :\n${contextText}`;
+            systemPrompt += `\n\nVoici des informations qui peuvent t'aider à répondre (ne les recopie pas telles quelles si non pertinentes) :\n${contextText}`;
         }
 
         const messages = [
@@ -112,11 +112,11 @@ export class LocalAI {
     }
 
     // ---------------------------------------------------------------------
-    // Normalisation / similarite de texte
+    // Normalisation / similarité de texte
     // ---------------------------------------------------------------------
 
     /**
-     * Normalise une chaine : minuscule, sans accents, sans ponctuation
+     * Normalise une chaîne : minuscule, sans accents, sans ponctuation
      * @param {string} str
      * @returns {string}
      */
@@ -131,7 +131,7 @@ export class LocalAI {
     }
 
     /**
-     * Decoupe en mots normalises et remplace les synonymes connus par leur forme canonique
+     * Découpe en mots normalisés et remplace les synonymes connus par leur forme canonique
      * @param {string} str
      * @returns {Array<string>}
      */
@@ -143,7 +143,7 @@ export class LocalAI {
     }
 
     /**
-     * Distance de Levenshtein, pour tolerer les fautes de frappe sur les mots
+     * Distance de Levenshtein, pour tolérer les fautes de frappe sur les mots
      * @param {string} a
      * @param {string} b
      * @returns {number}
@@ -172,7 +172,7 @@ export class LocalAI {
 
     /**
      * Deux mots sont "proches" si leur distance de Levenshtein est petite
-     * par rapport a leur longueur (tolere les fautes de frappe)
+     * par rapport à leur longueur (tolère les fautes de frappe)
      * @param {string} wordA
      * @param {string} wordB
      * @returns {boolean}
@@ -187,7 +187,7 @@ export class LocalAI {
     }
 
     /**
-     * Calcule un score de similarite entre une requete et un texte cible
+     * Calcule un score de similarité entre une requête et un texte cible
      * @param {string} query
      * @param {string} target
      * @returns {number}
@@ -223,7 +223,7 @@ export class LocalAI {
     // ---------------------------------------------------------------------
 
     loadKnowledgeBase() {
-        const savedKB = localStorage.getItem('localAIKnowledgeBase');
+        const savedKB = localStorage.getItem('huggingFaceAIKnowledgeBase');
         if (savedKB) {
             try {
                 return JSON.parse(savedKB);
@@ -235,44 +235,44 @@ export class LocalAI {
         return [
             {
                 question: "Comment faire une boucle for en JavaScript ?",
-                answer: "Voici comment faire une boucle for en JavaScript :\n\n```javascript\n// Boucle for basique\nfor (let i = 0; i < 10; i++) {\n  console.log(i); // Affiche 0 a 9\n}\n\n// Boucle for...of pour les tableaux\nconst tableau = [1, 2, 3, 4, 5];\nfor (const element of tableau) {\n  console.log(element);\n}\n\n// Boucle for...in pour les objets\nconst objet = { a: 1, b: 2, c: 3 };\nfor (const cle in objet) {\n  console.log(cle, objet[cle]);\n}\n```",
+                answer: "Voici comment faire une boucle for en JavaScript :\n\n```javascript\n// Boucle for basique\nfor (let i = 0; i < 10; i++) {\n  console.log(i); // Affiche 0 à 9\n}\n\n// Boucle for...of pour les tableaux\nconst tableau = [1, 2, 3, 4, 5];\nfor (const element of tableau) {\n  console.log(element);\n}\n\n// Boucle for...in pour les objets\nconst objet = { a: 1, b: 2, c: 3 };\nfor (const cle in objet) {\n  console.log(cle, objet[cle]);\n}\n```",
                 tags: ["javascript", "boucle", "for", "code"]
             },
             {
-                question: "Comment creer une fonction en JavaScript ?",
-                answer: "Voici comment creer une fonction en JavaScript :\n\n```javascript\nfunction direBonjour(nom) {\n  return `Bonjour, ${nom} !`;\n}\n\nconst direBonjour2 = (nom) => {\n  return `Bonjour, ${nom} !`;\n};\n\nfunction multiplier(a, b = 2) {\n  return a * b;\n}\n\nconsole.log(direBonjour(\"Alice\")); // \"Bonjour, Alice !\"\nconsole.log(multiplier(5)); // 10\n```",
+                question: "Comment créer une fonction en JavaScript ?",
+                answer: "Voici comment créer une fonction en JavaScript :\n\n```javascript\nfunction direBonjour(nom) {\n  return `Bonjour, ${nom} !`;\n}\n\nconst direBonjour2 = (nom) => {\n  return `Bonjour, ${nom} !`;\n};\n\nfunction multiplier(a, b = 2) {\n  return a * b;\n}\n\nconsole.log(direBonjour(\"Alice\")); // \"Bonjour, Alice !\"\nconsole.log(multiplier(5)); // 10\n```",
                 tags: ["javascript", "fonction", "code"]
             },
             {
-                question: "Quelle est la difference entre let, const et var en JavaScript ?",
-                answer: "Voici les differences entre `let`, `const` et `var` en JavaScript :\n\n| Mot-cle | Portee | Reaffectable | Hoisting |\n|---------|--------|--------------|----------|\n| `var`   | Fonction | Oui | Oui (undefined) |\n| `let`   | Bloc    | Oui | Non (erreur temporelle) |\n| `const` | Bloc    | Non | Non (erreur temporelle) |\n\n```javascript\nvar x = 10;\nif (true) { var x = 20; }\nconsole.log(x); // 20\n\nlet y = 10;\nif (true) { let y = 20; console.log(y); } // 20\nconsole.log(y); // 10\n\nconst z = 10;\n// z = 20; -> Erreur\n```",
-                tags: ["javascript", "let", "const", "var", "portee"]
+                question: "Quelle est la différence entre let, const et var en JavaScript ?",
+                answer: "Voici les différences entre `let`, `const` et `var` en JavaScript :\n\n| Mot-clé | Portée | Réaffectable | Hoisting |\n|---------|--------|--------------|----------|\n| `var`   | Fonction | Oui | Oui (undefined) |\n| `let`   | Bloc    | Oui | Non (erreur temporelle) |\n| `const` | Bloc    | Non | Non (erreur temporelle) |\n\n```javascript\nvar x = 10;\nif (true) { var x = 20; }\nconsole.log(x); // 20\n\nlet y = 10;\nif (true) { let y = 20; console.log(y); } // 20\nconsole.log(y); // 10\n\nconst z = 10;\n// z = 20; -> Erreur\n```",
+                tags: ["javascript", "let", "const", "var", "portée"]
             },
             {
-                question: "Comment faire une requete HTTP en JavaScript ?",
-                answer: "Voici plusieurs facons de faire des requetes HTTP en JavaScript :\n\n```javascript\n// fetch (moderne)\nfetch('https://api.example.com/data')\n  .then(response => response.json())\n  .then(data => console.log(data))\n  .catch(error => console.error('Erreur:', error));\n\n// fetch + async/await\nasync function getData() {\n  try {\n    const response = await fetch('https://api.example.com/data');\n    const data = await response.json();\n    console.log(data);\n  } catch (error) {\n    console.error('Erreur:', error);\n  }\n}\n```",
+                question: "Comment faire une requête HTTP en JavaScript ?",
+                answer: "Voici plusieurs façons de faire des requêtes HTTP en JavaScript :\n\n```javascript\n// fetch (moderne)\nfetch('https://api.example.com/data')\n  .then(response => response.json())\n  .then(data => console.log(data))\n  .catch(error => console.error('Erreur:', error));\n\n// fetch + async/await\nasync function getData() {\n  try {\n    const response = await fetch('https://api.example.com/data');\n    const data = await response.json();\n    console.log(data);\n  } catch (error) {\n    console.error('Erreur:', error);\n  }\n}\n```",
                 tags: ["javascript", "http", "fetch", "api", "code"]
             },
             {
                 question: "Comment manipuler le DOM en JavaScript ?",
-                answer: "Voici les methodes essentielles pour manipuler le DOM :\n\n```javascript\nconst element = document.getElementById('monId');\nconst elements = document.querySelectorAll('.maClasse');\n\nelement.textContent = 'Nouveau texte';\nelement.style.color = 'red';\nelement.classList.add('maClasse');\n\nconst newDiv = document.createElement('div');\ndocument.body.appendChild(newDiv);\n\nelement.addEventListener('click', (event) => {\n  console.log('Element clique !', event.target);\n});\n```",
+                answer: "Voici les méthodes essentielles pour manipuler le DOM :\n\n```javascript\nconst element = document.getElementById('monId');\nconst elements = document.querySelectorAll('.maClasse');\n\nelement.textContent = 'Nouveau texte';\nelement.style.color = 'red';\nelement.classList.add('maClasse');\n\nconst newDiv = document.createElement('div');\ndocument.body.appendChild(newDiv);\n\nelement.addEventListener('click', (event) => {\n  console.log('Élément cliqué !', event.target);\n});\n```",
                 tags: ["javascript", "dom", "manipulation", "code"]
             },
             {
-                question: "Comment gerer les promesses en JavaScript ?",
-                answer: "Voici comment gerer les promesses (Promises) en JavaScript :\n\n```javascript\nconst maPromesse = new Promise((resolve, reject) => {\n  setTimeout(() => {\n    resolve('Operation reussie !');\n  }, 1000);\n});\n\nmaPromesse\n  .then(resultat => console.log(resultat))\n  .catch(error => console.error(error));\n\nasync function executerPromesse() {\n  try {\n    const resultat = await maPromesse;\n    console.log(resultat);\n  } catch (error) {\n    console.error(error);\n  }\n}\n\nconst p1 = Promise.resolve(1);\nconst p2 = Promise.resolve(2);\nconst p3 = new Promise(resolve => setTimeout(resolve, 100, 3));\n\nPromise.all([p1, p2, p3]).then(valeurs => console.log(valeurs));\nPromise.race([p1, p2, p3]).then(valeur => console.log(valeur));\n```",
+                question: "Comment gérer les promesses en JavaScript ?",
+                answer: "Voici comment gérer les promesses (Promises) en JavaScript :\n\n```javascript\nconst maPromesse = new Promise((resolve, reject) => {\n  setTimeout(() => {\n    resolve('Opération réussie !');\n  }, 1000);\n});\n\nmaPromesse\n  .then(resultat => console.log(resultat))\n  .catch(error => console.error(error));\n\nasync function executerPromesse() {\n  try {\n    const resultat = await maPromesse;\n    console.log(resultat);\n  } catch (error) {\n    console.error(error);\n  }\n}\n\nconst p1 = Promise.resolve(1);\nconst p2 = Promise.resolve(2);\nconst p3 = new Promise(resolve => setTimeout(resolve, 100, 3));\n\nPromise.all([p1, p2, p3]).then(valeurs => console.log(valeurs));\nPromise.race([p1, p2, p3]).then(valeur => console.log(valeur));\n```",
                 tags: ["javascript", "promesse", "async", "await", "code"]
             },
             {
                 question: "Comment utiliser les tableaux en JavaScript ?",
-                answer: "Voici les methodes essentielles pour manipuler les tableaux en JavaScript :\n\n```javascript\nconst tableau = [1, 2, 3, 4, 5];\n\ntableau.push(6);\ntableau.unshift(0);\ntableau.pop();\ntableau.shift();\n\nconst doubles = tableau.map(x => x * 2);\nconst pairs = tableau.filter(x => x % 2 === 0);\nconst somme = tableau.reduce((acc, val) => acc + val, 0);\n\ntableau.sort((a, b) => a - b);\ntableau.forEach((element, index) => {\n  console.log(`Element ${index}: ${element}`);\n});\n```",
+                answer: "Voici les méthodes essentielles pour manipuler les tableaux en JavaScript :\n\n```javascript\nconst tableau = [1, 2, 3, 4, 5];\n\ntableau.push(6);\ntableau.unshift(0);\ntableau.pop();\ntableau.shift();\n\nconst doubles = tableau.map(x => x * 2);\nconst pairs = tableau.filter(x => x % 2 === 0);\nconst somme = tableau.reduce((acc, val) => acc + val, 0);\n\ntableau.sort((a, b) => a - b);\ntableau.forEach((element, index) => {\n  console.log(`Élément ${index}: ${element}`);\n});\n```",
                 tags: ["javascript", "tableau", "array", "code"]
             }
         ];
     }
 
     loadCodeTemplates() {
-        const savedTemplates = localStorage.getItem('localAICodeTemplates');
+        const savedTemplates = localStorage.getItem('huggingFaceAICodeTemplates');
         if (savedTemplates) {
             try {
                 return JSON.parse(savedTemplates);
@@ -298,13 +298,13 @@ export class LocalAI {
                 form: `<form id="{{formId}}">\n    <label for="{{fieldName}}">{{label}}:</label>\n    <input type="{{type}}" id="{{fieldName}}" name="{{fieldName}}" />\n    <button type="submit">Envoyer</button>\n</form>`
             },
             css: {
-                basic: `/* Selecteur pour {{element}} */\n{{selector}} {\n    color: #333;\n    background-color: #f5f5f5;\n    padding: 10px;\n    margin: 5px;\n}`
+                basic: `/* Sélecteur pour {{element}} */\n{{selector}} {\n    color: #333;\n    background-color: #f5f5f5;\n    padding: 10px;\n    margin: 5px;\n}`
             }
         };
     }
 
     loadConversations() {
-        const savedConversations = localStorage.getItem('localAIConversations');
+        const savedConversations = localStorage.getItem('huggingFaceAIConversations');
         if (savedConversations) {
             try {
                 this.conversations = JSON.parse(savedConversations);
@@ -317,7 +317,7 @@ export class LocalAI {
 
     saveConversations() {
         try {
-            localStorage.setItem('localAIConversations', JSON.stringify(this.conversations));
+            localStorage.setItem('huggingFaceAIConversations', JSON.stringify(this.conversations));
         } catch (e) {
             console.error('Erreur de sauvegarde des conversations :', e);
         }
@@ -325,7 +325,7 @@ export class LocalAI {
 
     saveKnowledgeBase() {
         try {
-            localStorage.setItem('localAIKnowledgeBase', JSON.stringify(this.knowledgeBase));
+            localStorage.setItem('huggingFaceAIKnowledgeBase', JSON.stringify(this.knowledgeBase));
         } catch (e) {
             console.error('Erreur de sauvegarde de la base de connaissances :', e);
         }
@@ -333,14 +333,14 @@ export class LocalAI {
 
     saveCodeTemplates() {
         try {
-            localStorage.setItem('localAICodeTemplates', JSON.stringify(this.codeTemplates));
+            localStorage.setItem('huggingFaceAICodeTemplates', JSON.stringify(this.codeTemplates));
         } catch (e) {
             console.error('Erreur de sauvegarde des templates :', e);
         }
     }
 
     // ---------------------------------------------------------------------
-    // Ajout de donnees
+    // Ajout de données
     // ---------------------------------------------------------------------
 
     addConversation(messages) {
@@ -371,7 +371,7 @@ export class LocalAI {
     }
 
     // ---------------------------------------------------------------------
-    // Recherche par similarite
+    // Recherche par similarité
     // ---------------------------------------------------------------------
 
     findSimilarKnowledge(query, limit = 3) {
@@ -403,11 +403,11 @@ export class LocalAI {
     }
 
     // ---------------------------------------------------------------------
-    // Generation de reponse (hybride)
+    // Génération de réponse (hybride)
     // ---------------------------------------------------------------------
 
     /**
-     * Genere une reponse : templates de code -> base de connaissances -> modele local
+     * Génère une réponse : templates de code -> base de connaissances -> modèle Hugging Face
      * @param {string} query
      * @param {Array} conversationHistory
      * @returns {Promise<string>}
@@ -416,7 +416,7 @@ export class LocalAI {
         const tokens = this.tokenize(query);
         const tokenSet = new Set(tokens);
 
-        // 1. Requete de generation de code -> toujours gere par templates (rapide, fiable)
+        // 1. Requête de génération de code -> toujours géré par templates (rapide, fiable)
         const codeLanguages = ['javascript', 'js', 'python', 'py', 'html', 'css', 'java', 'cpp', 'csharp', 'php', 'ruby', 'go', 'rust'];
         const codeIntentWords = ['code', 'script', 'fonction', 'boucle', 'classe', 'tableau', 'objet', 'requete'];
         const isCodeRequest = codeLanguages.some(lang => tokenSet.has(lang)) ||
@@ -426,25 +426,25 @@ export class LocalAI {
             return this.generateCodeResponse(query, tokens);
         }
 
-        // 2. Base de connaissances : si tres bonne correspondance, on la sert directement
+        // 2. Base de connaissances : si très bonne correspondance, on la sert directement
         const knowledgeMatches = this.findSimilarKnowledge(query, 3);
         if (knowledgeMatches.length > 0 && knowledgeMatches[0].score >= 60) {
             return knowledgeMatches[0].answer;
         }
 
-        // 3. Sinon, on passe au modele local, avec les meilleures entrees comme contexte (RAG leger)
+        // 3. Sinon, on passe au modèle Hugging Face, avec les meilleures entrées comme contexte (RAG léger)
         try {
             const contextEntries = knowledgeMatches.filter(m => m.score >= CONFIDENCE_THRESHOLD).slice(0, 2);
             return await this.generateModelResponse(query, conversationHistory, contextEntries);
         } catch (err) {
-            console.error('Le modele local a echoue, fallback sur reponse generique :', err);
-            // 4. Si le modele n'a pas pu se charger (navigateur trop ancien, etc.) : fallback propre
+            console.error('Le modèle Hugging Face a échoué, fallback sur réponse générique :', err);
+            // 4. Si le modèle n'a pas pu se charger (navigateur trop ancien, etc.) : fallback propre
             return this.generateGenericResponse(query, tokenSet);
         }
     }
 
     /**
-     * Genere une reponse de type code
+     * Génère une réponse de type code
      * @param {string} query
      * @param {Array<string>} tokens
      * @returns {string}
@@ -482,38 +482,38 @@ export class LocalAI {
         if (tokenSet.has('objet')) return this.generateObjectExample(language);
         if (tokenSet.has('requete')) return this.generateFetchExample(language);
 
-        return `Voici un exemple de code en ${language}. Peux-tu preciser ce que tu veux faire exactement (une boucle, une fonction, une classe, un tableau, un objet, une requete HTTP) pour que je te donne un exemple cible ?`;
+        return `Voici un exemple de code en ${language}. Peux-tu préciser ce que tu veux faire exactement (une boucle, une fonction, une classe, un tableau, un objet, une requête HTTP) pour que je te donne un exemple ciblé ?`;
     }
 
     generateLoopExample(language) {
         const templates = {
-            javascript: `Voici comment faire des boucles en JavaScript :\n\n\`\`\`javascript\n// 1. Boucle for (compteur)\nfor (let i = 0; i < 5; i++) {\n  console.log("Iteration " + i);\n}\n\n// 2. Boucle for...of (tableaux)\nconst tableau = [1, 2, 3, 4, 5];\nfor (const element of tableau) {\n  console.log(element);\n}\n\n// 3. Boucle for...in (objets)\nconst objet = { a: 1, b: 2, c: 3 };\nfor (const cle in objet) {\n  console.log(cle + ": " + objet[cle]);\n}\n\n// 4. Boucle while\nlet i = 0;\nwhile (i < 5) {\n  console.log("While: " + i);\n  i++;\n}\n\`\`\`\n\nQuelle boucle souhaites-tu utiliser ?`,
-            python: `Voici comment faire des boucles en Python :\n\n\`\`\`python\nfor i in range(5):\n    print("Iteration", i)\n\ntableau = [1, 2, 3, 4, 5]\nfor element in tableau:\n    print(element)\n\ni = 0\nwhile i < 5:\n    print("While:", i)\n    i += 1\n\`\`\`\n\nQuelle boucle souhaites-tu utiliser ?`,
-            html: `Les boucles ne sont pas possibles directement en HTML, il faut passer par JavaScript :\n\n\`\`\`html\n<!DOCTYPE html>\n<html>\n<body>\n    <div id="output"></div>\n    <script>\n        for (let i = 0; i < 5; i++) {\n            document.getElementById('output').innerHTML += '<p>Iteration ' + i + '</p>';\n        }\n    </script>\n</body>\n</html>\n\`\`\``
+            javascript: `Voici comment faire des boucles en JavaScript :\n\n\`\`\`javascript\n// 1. Boucle for (compteur)\nfor (let i = 0; i < 5; i++) {\n  console.log("Itération " + i);\n}\n\n// 2. Boucle for...of (tableaux)\nconst tableau = [1, 2, 3, 4, 5];\nfor (const element of tableau) {\n  console.log(element);\n}\n\n// 3. Boucle for...in (objets)\nconst objet = { a: 1, b: 2, c: 3 };\nfor (const cle in objet) {\n  console.log(cle + ": " + objet[cle]);\n}\n\n// 4. Boucle while\nlet i = 0;\nwhile (i < 5) {\n  console.log("While: " + i);\n  i++;\n}\n\`\`\`\n\nQuelle boucle souhaites-tu utiliser ?`,
+            python: `Voici comment faire des boucles en Python :\n\n\`\`\`python\nfor i in range(5):\n    print("Itération", i)\n\ntableau = [1, 2, 3, 4, 5]\nfor element in tableau:\n    print(element)\n\ni = 0\nwhile i < 5:\n    print("While:", i)\n    i += 1\n\`\`\`\n\nQuelle boucle souhaites-tu utiliser ?`,
+            html: `Les boucles ne sont pas possibles directement en HTML, il faut passer par JavaScript :\n\n\`\`\`html\n<!DOCTYPE html>\n<html>\n<body>\n    <div id="output"></div>\n    <script>\n        for (let i = 0; i < 5; i++) {\n            document.getElementById('output').innerHTML += '<p>Itération ' + i + '</p>';\n        }\n    </script>\n</body>\n</html>\n\`\`\``
         };
         return templates[language] || templates.javascript;
     }
 
     generateFunctionExample(language) {
         const templates = {
-            javascript: `Voici comment creer des fonctions en JavaScript :\n\n\`\`\`javascript\nfunction direBonjour(nom) {\n  return "Bonjour, " + nom + " !";\n}\n\nconst direBonjour2 = (nom) => "Bonjour, " + nom + " !";\n\nfunction multiplier(a, b = 2) {\n  return a * b;\n}\n\nconsole.log(direBonjour("Alice"));\nconsole.log(multiplier(5));\n\`\`\`\n\nSouhaites-tu un exemple avec des parametres specifiques ?`,
-            python: `Voici comment creer des fonctions en Python :\n\n\`\`\`python\ndef dire_bonjour(nom):\n    return "Bonjour, " + nom + " !"\n\ndef multiplier(a, b=2):\n    return a * b\n\ndef somme(*nombres):\n    return sum(nombres)\n\nprint(dire_bonjour("Alice"))\nprint(multiplier(5))\nprint(somme(1, 2, 3, 4))\n\`\`\`\n\nSouhaites-tu un exemple avec des parametres specifiques ?`
+            javascript: `Voici comment créer des fonctions en JavaScript :\n\n\`\`\`javascript\nfunction direBonjour(nom) {\n  return "Bonjour, " + nom + " !";\n}\n\nconst direBonjour2 = (nom) => "Bonjour, " + nom + " !";\n\nfunction multiplier(a, b = 2) {\n  return a * b;\n}\n\nconsole.log(direBonjour("Alice"));\nconsole.log(multiplier(5));\n\`\`\`\n\nSouhaites-tu un exemple avec des paramètres spécifiques ?`,
+            python: `Voici comment créer des fonctions en Python :\n\n\`\`\`python\ndef dire_bonjour(nom):\n    return "Bonjour, " + nom + " !"\n\ndef multiplier(a, b=2):\n    return a * b\n\ndef somme(*nombres):\n    return sum(nombres)\n\nprint(dire_bonjour("Alice"))\nprint(multiplier(5))\nprint(somme(1, 2, 3, 4))\n\`\`\`\n\nSouhaites-tu un exemple avec des paramètres spécifiques ?`
         };
         return templates[language] || templates.javascript;
     }
 
     generateClassExample(language) {
         const templates = {
-            javascript: `Voici comment creer des classes en JavaScript :\n\n\`\`\`javascript\nclass Personne {\n  constructor(nom, age) {\n    this.nom = nom;\n    this.age = age;\n  }\n\n  sePresenter() {\n    return "Je m'appelle " + this.nom + " et j'ai " + this.age + " ans.";\n  }\n}\n\nclass Etudiant extends Personne {\n  constructor(nom, age, universite) {\n    super(nom, age);\n    this.universite = universite;\n  }\n\n  sePresenter() {\n    return super.sePresenter() + " Je suis etudiant a " + this.universite + ".";\n  }\n}\n\nconst alice = new Personne("Alice", 25);\nconsole.log(alice.sePresenter());\n\`\`\``,
-            python: `Voici comment creer des classes en Python :\n\n\`\`\`python\nclass Personne:\n    def __init__(self, nom, age):\n        self.nom = nom\n        self.age = age\n\n    def se_presenter(self):\n        return f"Je m'appelle {self.nom} et j'ai {self.age} ans."\n\nclass Etudiant(Personne):\n    def __init__(self, nom, age, universite):\n        super().__init__(nom, age)\n        self.universite = universite\n\n    def se_presenter(self):\n        return super().se_presenter() + f" Je suis etudiant a {self.universite}."\n\nalice = Personne("Alice", 25)\nprint(alice.se_presenter())\n\`\`\``
+            javascript: `Voici comment créer des classes en JavaScript :\n\n\`\`\`javascript\nclass Personne {\n  constructor(nom, age) {\n    this.nom = nom;\n    this.age = age;\n  }\n\n  sePresenter() {\n    return "Je m'appelle " + this.nom + " et j'ai " + this.age + " ans.";\n  }\n}\n\nclass Etudiant extends Personne {\n  constructor(nom, age, universite) {\n    super(nom, age);\n    this.universite = universite;\n  }\n\n  sePresenter() {\n    return super.sePresenter() + " Je suis étudiant à " + this.universite + ".";\n  }\n}\n\nconst alice = new Personne("Alice", 25);\nconsole.log(alice.sePresenter());\n\`\`\``,
+            python: `Voici comment créer des classes en Python :\n\n\`\`\`python\nclass Personne:\n    def __init__(self, nom, age):\n        self.nom = nom\n        self.age = age\n\n    def se_presenter(self):\n        return f"Je m'appelle {self.nom} et j'ai {self.age} ans."\n\nclass Etudiant(Personne):\n    def __init__(self, nom, age, universite):\n        super().__init__(nom, age)\n        self.universite = universite\n\n    def se_presenter(self):\n        return super().se_presenter() + f" Je suis étudiant à {self.universite}."\n\nalice = Personne("Alice", 25)\nprint(alice.se_presenter())\n\`\`\``
         };
         return templates[language] || templates.javascript;
     }
 
     generateArrayExample(language) {
         const templates = {
-            javascript: `Voici comment manipuler les tableaux en JavaScript :\n\n\`\`\`javascript\nconst nombres = [1, 2, 3, 4, 5];\n\nnombres.push(6);\nnombres.unshift(0);\nnombres.pop();\nnombres.shift();\n\nconst doubles = nombres.map(x => x * 2);\nconst pairs = nombres.filter(x => x % 2 === 0);\nconst somme = nombres.reduce((acc, val) => acc + val, 0);\n\nnombres.sort((a, b) => a - b);\n\`\`\`\n\nQuelle operation souhaites-tu effectuer sur un tableau ?`,
-            python: `Voici comment manipuler les listes en Python :\n\n\`\`\`python\nnombres = [1, 2, 3, 4, 5]\n\nnombres.append(6)\nnombres.insert(0, 0)\nnombres.pop()\nnombres.remove(3)\n\ncarres = [x**2 for x in nombres]\npairs = [x for x in nombres if x % 2 == 0]\n\nnombres.sort()\n\`\`\`\n\nQuelle operation souhaites-tu effectuer sur une liste ?`
+            javascript: `Voici comment manipuler les tableaux en JavaScript :\n\n\`\`\`javascript\nconst nombres = [1, 2, 3, 4, 5];\n\nnombres.push(6);\nnombres.unshift(0);\nnombres.pop();\nnombres.shift();\n\nconst doubles = nombres.map(x => x * 2);\nconst pairs = nombres.filter(x => x % 2 === 0);\nconst somme = nombres.reduce((acc, val) => acc + val, 0);\n\nnombres.sort((a, b) => a - b);\n\`\`\`\n\nQuelle opération souhaites-tu effectuer sur un tableau ?`,
+            python: `Voici comment manipuler les listes en Python :\n\n\`\`\`python\nnombres = [1, 2, 3, 4, 5]\n\nnombres.append(6)\nnombres.insert(0, 0)\nnombres.pop()\nnombres.remove(3)\n\ncarres = [x**2 for x in nombres]\npairs = [x for x in nombres if x % 2 == 0]\n\nnombres.sort()\n\`\`\`\n\nQuelle opération souhaites-tu effectuer sur une liste ?`
         };
         return templates[language] || templates.javascript;
     }
@@ -527,13 +527,13 @@ export class LocalAI {
 
     generateFetchExample(language) {
         const templates = {
-            javascript: `Voici comment faire des requetes HTTP en JavaScript :\n\n\`\`\`javascript\nfetch('https://api.example.com/data')\n  .then(response => {\n    if (!response.ok) throw new Error('Erreur reseau: ' + response.status);\n    return response.json();\n  })\n  .then(data => console.log('Donnees recues:', data))\n  .catch(error => console.error('Erreur:', error));\n\nasync function recupererDonnees() {\n  try {\n    const response = await fetch('https://api.example.com/data');\n    const data = await response.json();\n    return data;\n  } catch (error) {\n    console.error('Erreur:', error);\n    throw error;\n  }\n}\n\`\`\`\n\nQuelle methode souhaites-tu utiliser ?`
+            javascript: `Voici comment faire des requêtes HTTP en JavaScript :\n\n\`\`\`javascript\nfetch('https://api.example.com/data')\n  .then(response => {\n    if (!response.ok) throw new Error('Erreur réseau: ' + response.status);\n    return response.json();\n  })\n  .then(data => console.log('Données reçues:', data))\n  .catch(error => console.error('Erreur:', error));\n\nasync function récupérerDonnées() {\n  try {\n    const response = await fetch('https://api.example.com/data');\n    const data = await response.json();\n    return data;\n  } catch (error) {\n    console.error('Erreur:', error);\n    throw error;\n  }\n}\n\`\`\`\n\nQuelle méthode souhaites-tu utiliser ?`
         };
         return templates[language] || templates.javascript;
     }
 
     /**
-     * Genere une reponse generique (salutations, remerciements, meta-questions, fallback)
+     * Génère une réponse générique (salutations, remerciements, meta-questions, fallback)
      * @param {string} query
      * @param {Set<string>} tokenSet
      * @returns {string}
@@ -546,24 +546,24 @@ export class LocalAI {
         }
 
         if (tokens.has('remerciement')) {
-            return "Avec plaisir ! N'hesite pas si tu as d'autres questions. 😊";
+            return "Avec plaisir ! N'hésite pas si tu as d'autres questions. 😊";
         }
 
         const normalized = this.normalize(query);
 
         if (normalized.includes('comment ca va') || normalized.includes('comment vas tu') || normalized.includes('how are you')) {
-            return "Je vais tres bien, merci ! Et toi, comment vas-tu ? 😊";
+            return "Je vais très bien, merci ! Et toi, comment vas-tu ? 😊";
         }
 
         if (normalized.includes('qui es tu') || normalized.includes('qui etes vous') || normalized.includes('who are you')) {
-            return "Je suis ton assistant IA local. Je reponds a tes questions, je genere du code, et j'apprends de nos conversations. Je fonctionne entierement dans ton navigateur, sans API externe. 🚀";
+            return "Je suis ton assistant IA basé sur Hugging Face. Je réponds à tes questions, je génère du code, et j'apprends de nos conversations. Je fonctionne entièrement dans ton navigateur, sans API externe. 🚀";
         }
 
         if (tokens.has('aide') || normalized.includes('que peux tu faire') || normalized.includes('what can you do')) {
-            return `Je peux :\n- Repondre a tes questions en me basant sur nos echanges passes\n- Generer du code dans plusieurs langages (JavaScript, Python, HTML, CSS...)\n- T'expliquer des concepts de programmation\n- Apprendre de nos echanges pour devenir plus pertinent avec le temps\n- Fonctionner entierement en local, sans envoyer tes donnees a une API externe\n\nEssaie-moi avec une question technique ou une demande de code !`;
+            return `Je peux :\n- Répondre à tes questions en me basant sur nos échanges passés\n- Générer du code dans plusieurs langages (JavaScript, Python, HTML, CSS...)\n- T'expliquer des concepts de programmation\n- Apprendre de nos échanges pour devenir plus pertinent avec le temps\n- Fonctionner entièrement en local, sans envoyer tes données à une API externe\n\nEssaie-moi avec une question technique ou une demande de code !`;
         }
 
-        return "Je ne suis pas sur d'avoir bien compris ta question — peux-tu la reformuler ou preciser un peu ? Je suis la pour t'aider ! 😊";
+        return "Je ne suis pas sûr d'avoir bien compris ta question — peux-tu la reformuler ou préciser un peu ? Je suis là pour t'aider ! 😊";
     }
 
     // ---------------------------------------------------------------------
@@ -571,7 +571,7 @@ export class LocalAI {
     // ---------------------------------------------------------------------
 
     /**
-     * Apprend d'une conversation (extrait les paires question/reponse)
+     * Apprend d'une conversation (extrait les paires question/réponse)
      * @param {Array} messages
      */
     learnFromConversation(messages) {
@@ -623,8 +623,8 @@ export class LocalAI {
     clearKnowledge() {
         this.knowledgeBase = [];
         this.conversations = [];
-        localStorage.removeItem('localAIKnowledgeBase');
-        localStorage.removeItem('localAIConversations');
+        localStorage.removeItem('huggingFaceAIKnowledgeBase');
+        localStorage.removeItem('huggingFaceAIConversations');
     }
 
     exportKnowledge() {
@@ -651,6 +651,5 @@ export class LocalAI {
     }
 }
 
-
-export const localAI = new LocalAI();
-export default LocalAI;
+export const huggingFaceAI = new HuggingFaceAI();
+export default HuggingFaceAI;
