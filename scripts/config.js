@@ -1,21 +1,21 @@
 /**
  * Configuration Module
  * Centralized configuration for the Claude AI Chatbot Clone
- * Updated to support GitHub DeepSeek API
+ * Updated for GitHub DeepSeek API with correct model names and URL
  */
 
 // Default configuration
 const DEFAULT_CONFIG = {
     api: {
-        provider: 'mistral',
-        url: 'https://api.mistral.ai/v1/chat/completions',
+        provider: 'github',
+        url: 'https://api.githubai.com/v1/chat/completions',
         key: '',
-        model: 'mistral-tiny'
+        model: 'deepseek-chat'
     },
     settings: {
         temperature: 0.7,
         maxTokens: 32000,
-        theme: 'system',
+        theme: 'dark',
         fontSize: 'medium',
         enableStreaming: true,
         saveHistory: true,
@@ -46,13 +46,21 @@ const API_PROVIDERS = {
         authPrefix: 'Bearer',
         requestFormat: 'openai'
     },
-    // GitHub DeepSeek API configuration
-    deepseek: {
-        url: 'https://api.deepseek.com/v1/chat/completions',
+    // GitHub DeepSeek API configuration (CORRECT URL AND MODELS)
+    github: {
+        url: 'https://api.githubai.com/v1/chat/completions',
         models: ['deepseek-chat', 'deepseek-coder'],
         authHeader: 'Authorization',
-        authPrefix: 'Bearer',
-        requestFormat: 'openai' // DeepSeek uses OpenAI-compatible format
+        authPrefix: 'token',
+        requestFormat: 'openai'
+    },
+    // Alias for backward compatibility
+    deepseek: {
+        url: 'https://api.githubai.com/v1/chat/completions',
+        models: ['deepseek-chat', 'deepseek-coder'],
+        authHeader: 'Authorization',
+        authPrefix: 'token',
+        requestFormat: 'openai'
     }
 };
 
@@ -79,6 +87,13 @@ export function loadConfig() {
                     ...parsedConfig.settings
                 }
             };
+            
+            // Ensure GitHub provider uses correct models
+            if (config.api.provider === 'github' || config.api.url.includes('githubai.com')) {
+                if (!config.api.model || !API_PROVIDERS.github.models.includes(config.api.model)) {
+                    config.api.model = 'deepseek-chat';
+                }
+            }
         } catch (e) {
             console.error('Error loading config:', e);
         }
@@ -126,7 +141,7 @@ export function getConfig() {
  * @returns {Object} Provider configuration
  */
 export function getProviderConfig(provider) {
-    return API_PROVIDERS[provider] || API_PROVIDERS.mistral;
+    return API_PROVIDERS[provider] || API_PROVIDERS.github;
 }
 
 /**
@@ -154,6 +169,14 @@ export async function loadConfigFromFile() {
         if (response.ok) {
             const fileConfig = await response.json();
             if (fileConfig.api) {
+                // Ensure GitHub uses correct model names
+                if (fileConfig.api.provider === 'github' || 
+                    (fileConfig.api.url && fileConfig.api.url.includes('githubai.com'))) {
+                    const validModels = API_PROVIDERS.github.models;
+                    if (fileConfig.api.model && !validModels.includes(fileConfig.api.model)) {
+                        fileConfig.api.model = 'deepseek-chat';
+                    }
+                }
                 updateConfig({ api: fileConfig.api });
             }
             if (fileConfig.settings) {
