@@ -1,16 +1,16 @@
 /**
  * Configuration Module
  * Centralized configuration for the Claude AI Chatbot Clone
- * Updated for GitHub DeepSeek API with CORRECT model names (DeepSeek-V3-0324)
+ * Updated for Z.ai GLM API (GLM-5.2)
  */
 
 // Default configuration
 const DEFAULT_CONFIG = {
     api: {
-        provider: 'github',
-        url: 'https://api.githubai.com/v1/chat/completions',
+        provider: 'zai',
+        url: 'https://api.z.ai/api/paas/v4/chat/completions',
         key: '',
-        model: 'DeepSeek-V3-0324'
+        model: 'glm-5.2'
     },
     settings: {
         temperature: 0.7,
@@ -61,6 +61,14 @@ const API_PROVIDERS = {
         authHeader: 'Authorization',
         authPrefix: 'token',
         requestFormat: 'openai'
+    },
+    // Z.ai GLM API configuration
+    zai: {
+        url: 'https://api.z.ai/api/paas/v4/chat/completions',
+        models: ['glm-5.2', 'glm-5.1', 'glm-4.6'],
+        authHeader: 'Authorization',
+        authPrefix: 'Bearer',
+        requestFormat: 'openai'
     }
 };
 
@@ -87,11 +95,18 @@ export function loadConfig() {
                     ...parsedConfig.settings
                 }
             };
-            
+
             // Ensure GitHub provider uses correct models
-            if (config.api.provider === 'github' || config.api.url.includes('githubai.com')) {
+            if (config.api.provider === 'github' || (config.api.url && config.api.url.includes('githubai.com'))) {
                 if (!config.api.model || !API_PROVIDERS.github.models.includes(config.api.model)) {
                     config.api.model = 'DeepSeek-V3-0324';
+                }
+            }
+
+            // Ensure Z.ai provider uses correct models
+            if (config.api.provider === 'zai' || (config.api.url && config.api.url.includes('api.z.ai'))) {
+                if (!config.api.model || !API_PROVIDERS.zai.models.includes(config.api.model)) {
+                    config.api.model = 'glm-5.2';
                 }
             }
         } catch (e) {
@@ -141,7 +156,7 @@ export function getConfig() {
  * @returns {Object} Provider configuration
  */
 export function getProviderConfig(provider) {
-    return API_PROVIDERS[provider] || API_PROVIDERS.github;
+    return API_PROVIDERS[provider] || API_PROVIDERS.zai;
 }
 
 /**
@@ -170,13 +185,23 @@ export async function loadConfigFromFile() {
             const fileConfig = await response.json();
             if (fileConfig.api) {
                 // Ensure GitHub uses correct model names
-                if (fileConfig.api.provider === 'github' || 
+                if (fileConfig.api.provider === 'github' ||
                     (fileConfig.api.url && fileConfig.api.url.includes('githubai.com'))) {
                     const validModels = API_PROVIDERS.github.models;
                     if (fileConfig.api.model && !validModels.includes(fileConfig.api.model)) {
                         fileConfig.api.model = 'DeepSeek-V3-0324';
                     }
                 }
+
+                // Ensure Z.ai uses correct model names
+                if (fileConfig.api.provider === 'zai' ||
+                    (fileConfig.api.url && fileConfig.api.url.includes('api.z.ai'))) {
+                    const validModels = API_PROVIDERS.zai.models;
+                    if (fileConfig.api.model && !validModels.includes(fileConfig.api.model)) {
+                        fileConfig.api.model = 'glm-5.2';
+                    }
+                }
+
                 updateConfig({ api: fileConfig.api });
             }
             if (fileConfig.settings) {
