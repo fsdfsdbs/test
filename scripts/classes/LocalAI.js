@@ -41,15 +41,6 @@ export class HuggingFaceAI {
         this.modelReady = false;
     }
 
-    // ---------------------------------------------------------------------
-    // Chargement et appel du modèle Hugging Face (Transformers.js)
-    // ---------------------------------------------------------------------
-
-    /**
-     * Charge le modèle Hugging Face une seule fois (mis en cache navigateur ensuite via IndexedDB)
-     * @param {function} [onProgress] callback optionnel (ex: pour afficher une barre de progression)
-     * @returns {Promise<object>}
-     */
     async loadHuggingFaceModel(onProgress) {
         if (this.model) return this.model;
         if (this.modelLoading) return this.modelLoading;
@@ -58,8 +49,8 @@ export class HuggingFaceAI {
             'text-generation',
             'Xenova/Qwen1.5-0.5B-Chat',
             {
-                dtype: 'q4',        // version quantifiée : plus légère, plus rapide
-                device: 'webgpu',   // fallback automatique vers wasm si webgpu indisponible
+                dtype: 'q4',
+                device: 'webgpu',
                 progress_callback: onProgress
             }
         ).then(model => {
@@ -75,108 +66,51 @@ export class HuggingFaceAI {
         return this.modelLoading;
     }
 
-    /**
-     * Génère une réponse libre via le modèle Hugging Face, avec du contexte issu de la
-     * base de connaissances (RAG léger) pour limiter les inventions.
-     * @param {string} query
-     * @param {Array} conversationHistory
-     * @param {Array} contextEntries
-     * @returns {Promise<string>}
-     */
     async generateModelResponse(query, conversationHistory = [], contextEntries = []) {
         const model = await this.loadHuggingFaceModel();
-
         let systemPrompt = "Tu es un assistant utile qui répond en français, de façon claire et concise.";
         if (contextEntries.length > 0) {
-            const contextText = contextEntries
-                .map(e => `Q: ${e.question}\nR: ${e.answer}`)
-                .join('\n\n');
+            const contextText = contextEntries.map(e => `Q: ${e.question}\nR: ${e.answer}`).join('\n\n');
             systemPrompt += `\n\nVoici des informations qui peuvent t'aider à répondre (ne les recopie pas telles quelles si non pertinentes) :\n${contextText}`;
         }
-
         const messages = [
             { role: 'system', content: systemPrompt },
             ...conversationHistory.slice(-6),
             { role: 'user', content: query }
         ];
-
         const output = await model(messages, {
             max_new_tokens: 256,
             temperature: 0.7,
             do_sample: true
         });
-
         const generated = output[0].generated_text;
         const lastMessage = Array.isArray(generated) ? generated[generated.length - 1] : generated;
         return typeof lastMessage === 'string' ? lastMessage : lastMessage.content;
     }
 
-    // ---------------------------------------------------------------------
-    // Normalisation / similarité de texte
-    // ---------------------------------------------------------------------
-
-    /**
-     * Normalise une chaîne : minuscule, sans accents, sans ponctuation
-     * @param {string} str
-     * @returns {string}
-     */
     normalize(str) {
         if (!str) return '';
-        return str
-            .toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-z0-9\s]/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
+        return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
     }
 
-    /**
-     * Découpe en mots normalisés et remplace les synonymes connus par leur forme canonique
-     * @param {string} str
-     * @returns {Array<string>}
-     */
     tokenize(str) {
-        return this.normalize(str)
-            .split(' ')
-            .filter(Boolean)
-            .map(word => SYNONYMS[word] || word);
+        return this.normalize(str).split(' ').filter(Boolean).map(word => SYNONYMS[word] || word);
     }
 
-    /**
-     * Distance de Levenshtein, pour tolérer les fautes de frappe sur les mots
-     * @param {string} a
-     * @param {string} b
-     * @returns {number}
-     */
     levenshtein(a, b) {
         if (a === b) return 0;
         if (a.length === 0) return b.length;
         if (b.length === 0) return a.length;
-
-        const matrix = Array.from({ length: a.length + 1 }, (_, i) =>
-            Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
-        );
-
+        const matrix = Array.from({ length: a.length + 1 }, (_, i) => Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)));
         for (let i = 1; i <= a.length; i++) {
             for (let j = 1; j <= b.length; j++) {
                 const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-                matrix[i][j] = Math.min(
-                    matrix[i - 1][j] + 1,
-                    matrix[i][j - 1] + 1,
-                    matrix[i - 1][j - 1] + cost
-                );
+                matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
             }
         }
         return matrix[a.length][b.length];
     }
 
-    /**
-     * Deux mots sont "proches" si leur distance de Levenshtein est petite
-     * par rapport à leur longueur (tolère les fautes de frappe)
-     * @param {string} wordA
-     * @param {string} wordB
-     * @returns {boolean}
-     */
     wordsAreClose(wordA, wordB) {
         if (wordA === wordB) return true;
         if (Math.abs(wordA.length - wordB.length) > 2) return false;
@@ -186,52 +120,30 @@ export class HuggingFaceAI {
         return distance <= Math.floor(maxLen / 4) + 1;
     }
 
-    /**
-     * Calcule un score de similarité entre une requête et un texte cible
-     * @param {string} query
-     * @param {string} target
-     * @returns {number}
-     */
     similarityScore(query, target) {
         const queryNorm = this.normalize(query);
         const targetNorm = this.normalize(target);
         if (!queryNorm || !targetNorm) return 0;
-
         let score = 0;
-        if (targetNorm.includes(queryNorm) || queryNorm.includes(targetNorm)) {
-            score += 60;
-        }
-
+        if (targetNorm.includes(queryNorm) || queryNorm.includes(targetNorm)) score += 60;
         const queryWords = this.tokenize(query);
         const targetWords = this.tokenize(target);
         if (queryWords.length === 0 || targetWords.length === 0) return score;
-
         let matched = 0;
         for (const qWord of queryWords) {
             const exact = targetWords.includes(qWord);
             const fuzzy = !exact && targetWords.some(tWord => this.wordsAreClose(qWord, tWord));
-            if (exact) matched += 1;
-            else if (fuzzy) matched += 0.6;
+            if (exact) matched += 1; else if (fuzzy) matched += 0.6;
         }
-
         score += (matched / queryWords.length) * 40;
         return score;
     }
 
-    // ---------------------------------------------------------------------
-    // Persistance (localStorage)
-    // ---------------------------------------------------------------------
-
     loadKnowledgeBase() {
         const savedKB = localStorage.getItem('huggingFaceAIKnowledgeBase');
         if (savedKB) {
-            try {
-                return JSON.parse(savedKB);
-            } catch (e) {
-                console.error('Erreur de chargement de la base de connaissances :', e);
-            }
+            try { return JSON.parse(savedKB); } catch (e) { console.error('Erreur de chargement de la base de connaissances :', e); }
         }
-
         return [
             {
                 question: "Comment faire une boucle for en JavaScript ?",
@@ -274,13 +186,8 @@ export class HuggingFaceAI {
     loadCodeTemplates() {
         const savedTemplates = localStorage.getItem('huggingFaceAICodeTemplates');
         if (savedTemplates) {
-            try {
-                return JSON.parse(savedTemplates);
-            } catch (e) {
-                console.error('Erreur de chargement des templates de code :', e);
-            }
+            try { return JSON.parse(savedTemplates); } catch (e) { console.error('Erreur de chargement des templates de code :', e); }
         }
-
         return {
             javascript: {
                 loop: `for (let i = 0; i < {{count}}; i++) {\n  // Votre code ici\n  console.log(i);\n}`,
@@ -306,86 +213,47 @@ export class HuggingFaceAI {
     loadConversations() {
         const savedConversations = localStorage.getItem('huggingFaceAIConversations');
         if (savedConversations) {
-            try {
-                this.conversations = JSON.parse(savedConversations);
-            } catch (e) {
-                console.error('Erreur de chargement des conversations :', e);
-                this.conversations = [];
-            }
+            try { this.conversations = JSON.parse(savedConversations); } catch (e) { console.error('Erreur de chargement des conversations :', e); this.conversations = []; }
         }
     }
 
     saveConversations() {
-        try {
-            localStorage.setItem('huggingFaceAIConversations', JSON.stringify(this.conversations));
-        } catch (e) {
-            console.error('Erreur de sauvegarde des conversations :', e);
-        }
+        try { localStorage.setItem('huggingFaceAIConversations', JSON.stringify(this.conversations)); } catch (e) { console.error('Erreur de sauvegarde des conversations :', e); }
     }
 
     saveKnowledgeBase() {
-        try {
-            localStorage.setItem('huggingFaceAIKnowledgeBase', JSON.stringify(this.knowledgeBase));
-        } catch (e) {
-            console.error('Erreur de sauvegarde de la base de connaissances :', e);
-        }
+        try { localStorage.setItem('huggingFaceAIKnowledgeBase', JSON.stringify(this.knowledgeBase)); } catch (e) { console.error('Erreur de sauvegarde de la base de connaissances :', e); }
     }
 
     saveCodeTemplates() {
-        try {
-            localStorage.setItem('huggingFaceAICodeTemplates', JSON.stringify(this.codeTemplates));
-        } catch (e) {
-            console.error('Erreur de sauvegarde des templates :', e);
-        }
+        try { localStorage.setItem('huggingFaceAICodeTemplates', JSON.stringify(this.codeTemplates)); } catch (e) { console.error('Erreur de sauvegarde des templates :', e); }
     }
 
-    // ---------------------------------------------------------------------
-    // Ajout de données
-    // ---------------------------------------------------------------------
-
     addConversation(messages) {
-        this.conversations.push({
-            id: Date.now().toString(),
-            timestamp: new Date().toISOString(),
-            messages: messages.map(msg => ({ ...msg }))
-        });
+        this.conversations.push({ id: Date.now().toString(), timestamp: new Date().toISOString(), messages: messages.map(msg => ({ ...msg })) });
         this.saveConversations();
     }
 
     addKnowledge(question, answer, tags = []) {
-        this.knowledgeBase.push({
-            question,
-            answer,
-            tags,
-            timestamp: new Date().toISOString()
-        });
+        this.knowledgeBase.push({ question, answer, tags, timestamp: new Date().toISOString() });
         this.saveKnowledgeBase();
     }
 
     addCodeTemplate(language, name, template) {
-        if (!this.codeTemplates[language]) {
-            this.codeTemplates[language] = {};
-        }
+        if (!this.codeTemplates[language]) this.codeTemplates[language] = {};
         this.codeTemplates[language][name] = template;
         this.saveCodeTemplates();
     }
 
-    // ---------------------------------------------------------------------
-    // Recherche par similarité
-    // ---------------------------------------------------------------------
-
     findSimilarKnowledge(query, limit = 3) {
         const scoredEntries = this.knowledgeBase.map(entry => {
             let score = this.similarityScore(query, entry.question);
-
             const queryWords = this.tokenize(query);
             const tagWords = (entry.tags || []).map(t => this.normalize(t));
             const tagBonus = queryWords.filter(w => tagWords.includes(w)).length * 15;
             score += tagBonus;
-
             return { ...entry, score };
         }).filter(entry => entry.score > 0);
-
         return scoredEntries.sort((a, b) => b.score - a.score).slice(0, limit);
     }
 
@@ -398,60 +266,29 @@ export class HuggingFaceAI {
             });
             return { ...conv, score: bestMessageScore };
         }).filter(conv => conv.score > 0);
-
         return scoredConversations.sort((a, b) => b.score - a.score).slice(0, limit);
     }
 
-    // ---------------------------------------------------------------------
-    // Génération de réponse (hybride)
-    // ---------------------------------------------------------------------
-
-    /**
-     * Génère une réponse : templates de code -> base de connaissances -> modèle Hugging Face
-     * @param {string} query
-     * @param {Array} conversationHistory
-     * @returns {Promise<string>}
-     */
     async generateResponse(query, conversationHistory = []) {
         const tokens = this.tokenize(query);
         const tokenSet = new Set(tokens);
-
-        // 1. Requête de génération de code -> toujours géré par templates (rapide, fiable)
         const codeLanguages = ['javascript', 'js', 'python', 'py', 'html', 'css', 'java', 'cpp', 'csharp', 'php', 'ruby', 'go', 'rust'];
         const codeIntentWords = ['code', 'script', 'fonction', 'boucle', 'classe', 'tableau', 'objet', 'requete'];
-        const isCodeRequest = codeLanguages.some(lang => tokenSet.has(lang)) ||
-                               codeIntentWords.some(word => tokenSet.has(word));
-
-        if (isCodeRequest) {
-            return this.generateCodeResponse(query, tokens);
-        }
-
-        // 2. Base de connaissances : si très bonne correspondance, on la sert directement
+        const isCodeRequest = codeLanguages.some(lang => tokenSet.has(lang)) || codeIntentWords.some(word => tokenSet.has(word));
+        if (isCodeRequest) return this.generateCodeResponse(query, tokens);
         const knowledgeMatches = this.findSimilarKnowledge(query, 3);
-        if (knowledgeMatches.length > 0 && knowledgeMatches[0].score >= 60) {
-            return knowledgeMatches[0].answer;
-        }
-
-        // 3. Sinon, on passe au modèle Hugging Face, avec les meilleures entrées comme contexte (RAG léger)
+        if (knowledgeMatches.length > 0 && knowledgeMatches[0].score >= 60) return knowledgeMatches[0].answer;
         try {
             const contextEntries = knowledgeMatches.filter(m => m.score >= CONFIDENCE_THRESHOLD).slice(0, 2);
             return await this.generateModelResponse(query, conversationHistory, contextEntries);
         } catch (err) {
             console.error('Le modèle Hugging Face a échoué, fallback sur réponse générique :', err);
-            // 4. Si le modèle n'a pas pu se charger (navigateur trop ancien, etc.) : fallback propre
             return this.generateGenericResponse(query, tokenSet);
         }
     }
 
-    /**
-     * Génère une réponse de type code
-     * @param {string} query
-     * @param {Array<string>} tokens
-     * @returns {string}
-     */
     generateCodeResponse(query, tokens) {
         const tokenSet = new Set(tokens || this.tokenize(query));
-
         const languageKeywords = {
             javascript: ['javascript', 'js', 'ecmascript'],
             python: ['python', 'py'],
@@ -465,23 +302,17 @@ export class HuggingFaceAI {
             go: ['go', 'golang'],
             rust: ['rust']
         };
-
         let language = null;
         for (const [lang, keywords] of Object.entries(languageKeywords)) {
-            if (keywords.some(keyword => tokenSet.has(keyword))) {
-                language = lang;
-                break;
-            }
+            if (keywords.some(keyword => tokenSet.has(keyword))) { language = lang; break; }
         }
         language = language || 'javascript';
-
         if (tokenSet.has('boucle')) return this.generateLoopExample(language);
         if (tokenSet.has('fonction')) return this.generateFunctionExample(language);
         if (tokenSet.has('classe')) return this.generateClassExample(language);
         if (tokenSet.has('tableau')) return this.generateArrayExample(language);
         if (tokenSet.has('objet')) return this.generateObjectExample(language);
         if (tokenSet.has('requete')) return this.generateFetchExample(language);
-
         return `Voici un exemple de code en ${language}. Peux-tu préciser ce que tu veux faire exactement (une boucle, une fonction, une classe, un tableau, un objet, une requête HTTP) pour que je te donne un exemple ciblé ?`;
     }
 
@@ -532,93 +363,42 @@ export class HuggingFaceAI {
         return templates[language] || templates.javascript;
     }
 
-    /**
-     * Génère une réponse générique (salutations, remerciements, meta-questions, fallback)
-     * @param {string} query
-     * @param {Set<string>} tokenSet
-     * @returns {string}
-     */
     generateGenericResponse(query, tokenSet) {
         const tokens = tokenSet || new Set(this.tokenize(query));
-
-        if (tokens.has('salutation')) {
-            return "Bonjour ! Comment puis-je t'aider aujourd'hui ? 😊";
-        }
-
-        if (tokens.has('remerciement')) {
-            return "Avec plaisir ! N'hésite pas si tu as d'autres questions. 😊";
-        }
-
+        if (tokens.has('salutation')) return "Bonjour ! Comment puis-je t'aider aujourd'hui ? 😊";
+        if (tokens.has('remerciement')) return "Avec plaisir ! N'hésite pas si tu as d'autres questions. 😊";
         const normalized = this.normalize(query);
-
-        if (normalized.includes('comment ca va') || normalized.includes('comment vas tu') || normalized.includes('how are you')) {
-            return "Je vais très bien, merci ! Et toi, comment vas-tu ? 😊";
-        }
-
-        if (normalized.includes('qui es tu') || normalized.includes('qui etes vous') || normalized.includes('who are you')) {
-            return "Je suis ton assistant IA basé sur Hugging Face. Je réponds à tes questions, je génère du code, et j'apprends de nos conversations. Je fonctionne entièrement dans ton navigateur, sans API externe. 🚀";
-        }
-
-        if (tokens.has('aide') || normalized.includes('que peux tu faire') || normalized.includes('what can you do')) {
-            return `Je peux :\n- Répondre à tes questions en me basant sur nos échanges passés\n- Générer du code dans plusieurs langages (JavaScript, Python, HTML, CSS...)\n- T'expliquer des concepts de programmation\n- Apprendre de nos échanges pour devenir plus pertinent avec le temps\n- Fonctionner entièrement en local, sans envoyer tes données à une API externe\n\nEssaie-moi avec une question technique ou une demande de code !`;
-        }
-
+        if (normalized.includes('comment ca va') || normalized.includes('comment vas tu') || normalized.includes('how are you')) return "Je vais très bien, merci ! Et toi, comment vas-tu ? 😊";
+        if (normalized.includes('qui es tu') || normalized.includes('qui etes vous') || normalized.includes('who are you')) return "Je suis ton assistant IA basé sur Hugging Face. Je réponds à tes questions, je génère du code, et j'apprends de nos conversations. Je fonctionne entièrement dans ton navigateur, sans API externe. 🚀";
+        if (tokens.has('aide') || normalized.includes('que peux tu faire') || normalized.includes('what can you do')) return `Je peux :\n- Répondre à tes questions en me basant sur nos échanges passés\n- Générer du code dans plusieurs langages (JavaScript, Python, HTML, CSS...)\n- T'expliquer des concepts de programmation\n- Apprendre de nos échanges pour devenir plus pertinent avec le temps\n- Fonctionner entièrement en local, sans envoyer tes données à une API externe\n\nEssaie-moi avec une question technique ou une demande de code !`;
         return "Je ne suis pas sûr d'avoir bien compris ta question — peux-tu la reformuler ou préciser un peu ? Je suis là pour t'aider ! 😊";
     }
 
-    // ---------------------------------------------------------------------
-    // Apprentissage
-    // ---------------------------------------------------------------------
-
-    /**
-     * Apprend d'une conversation (extrait les paires question/réponse)
-     * @param {Array} messages
-     */
     learnFromConversation(messages) {
         for (let i = 0; i < messages.length - 1; i++) {
             const question = messages[i];
             const answer = messages[i + 1];
-
             if (question.role === 'user' && answer.role === 'ai') {
                 if (answer.content.length > 20) {
                     const alreadyKnown = this.findSimilarKnowledge(question.content, 1);
                     const isDuplicate = alreadyKnown.length > 0 && alreadyKnown[0].score >= 80;
-
-                    if (!isDuplicate) {
-                        this.addKnowledge(
-                            question.content,
-                            answer.content,
-                            this.extractTags(question.content)
-                        );
-                    }
+                    if (!isDuplicate) this.addKnowledge(question.content, answer.content, this.extractTags(question.content));
                 }
             }
         }
     }
 
-    /**
-     * Extrait des tags pertinents d'une question
-     * @param {string} question
-     * @returns {Array<string>}
-     */
     extractTags(question) {
         const tags = new Set();
         const tokens = this.tokenize(question);
-
         const languages = ['javascript', 'js', 'python', 'py', 'html', 'css', 'java', 'cpp', 'csharp', 'php', 'ruby', 'go', 'rust', 'typescript', 'ts'];
         const topics = ['boucle', 'fonction', 'classe', 'tableau', 'objet', 'dom', 'requete', 'promesse'];
-
         tokens.forEach(token => {
             if (languages.includes(token)) tags.add(token);
             if (topics.includes(token)) tags.add(token);
         });
-
         return [...tags];
     }
-
-    // ---------------------------------------------------------------------
-    // Import / export / reset
-    // ---------------------------------------------------------------------
 
     clearKnowledge() {
         this.knowledgeBase = [];
@@ -636,20 +416,13 @@ export class HuggingFaceAI {
     }
 
     importKnowledge(data) {
-        if (data.knowledgeBase) {
-            this.knowledgeBase = data.knowledgeBase;
-            this.saveKnowledgeBase();
-        }
-        if (data.conversations) {
-            this.conversations = data.conversations;
-            this.saveConversations();
-        }
-        if (data.codeTemplates) {
-            this.codeTemplates = data.codeTemplates;
-            this.saveCodeTemplates();
-        }
+        if (data.knowledgeBase) { this.knowledgeBase = data.knowledgeBase; this.saveKnowledgeBase(); }
+        if (data.conversations) { this.conversations = data.conversations; this.saveConversations(); }
+        if (data.codeTemplates) { this.codeTemplates = data.codeTemplates; this.saveCodeTemplates(); }
     }
 }
 
+// --- NOUVELLES EXPORTS (COMPATIBILITÉ AVEC ChatApp.js) ---
 export const huggingFaceAI = new HuggingFaceAI();
+export const localAI = huggingFaceAI; // Alias pour la rétrocompatibilité avec ChatApp.js
 export default HuggingFaceAI;
